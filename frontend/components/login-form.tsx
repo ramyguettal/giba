@@ -5,13 +5,14 @@ import { ArrowRight, Bot, KeyRound, ShieldCheck, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Dictionary } from "@/lib/i18n";
-import { Locale } from "@/lib/types";
+import { Locale, ThemeMode } from "@/lib/types";
 
 const demoAccounts = [
   { username: "admin", password: "admin123", role: "admin" },
@@ -19,7 +20,15 @@ const demoAccounts = [
   { username: "supervisor", password: "super123", role: "supervisor" },
 ] as const;
 
-export function LoginForm({ locale, dictionary }: { locale: Locale; dictionary: Dictionary }) {
+export function LoginForm({
+  locale,
+  theme,
+  dictionary,
+}: {
+  locale: Locale;
+  theme: ThemeMode;
+  dictionary: Dictionary;
+}) {
   const auth = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState("admin");
@@ -40,7 +49,7 @@ export function LoginForm({ locale, dictionary }: { locale: Locale; dictionary: 
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(31,78,121,0.12),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(46,107,79,0.09),_transparent_26%),var(--background)]">
+    <div className="relative min-h-screen overflow-hidden bg-[var(--background)]">
       <div className="mx-auto grid min-h-screen w-full max-w-[1680px] gap-6 px-4 py-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-6 lg:py-8">
         <section className="hidden lg:flex">
           <Card className="w-full border-white/70 bg-[color-mix(in_oklab,var(--card),white_20%)] shadow-xl backdrop-blur">
@@ -95,7 +104,10 @@ export function LoginForm({ locale, dictionary }: { locale: Locale; dictionary: 
                     {dictionary.login.accessDescription}
                   </CardDescription>
                 </div>
-                <LanguageSwitcher locale={locale} />
+                <div className="flex flex-col items-end gap-2">
+                  <ThemeSwitcher theme={theme} dictionary={dictionary} />
+                  <LanguageSwitcher locale={locale} />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -125,14 +137,15 @@ export function LoginForm({ locale, dictionary }: { locale: Locale; dictionary: 
                 </CardHeader>
                 <CardContent className="grid gap-3">
                   {demoAccounts.map((account) => (
-                    <button
+                    <Button
                       key={account.username}
                       type="button"
+                      variant="outline"
                       onClick={() => {
                         setUsername(account.username);
                         setPassword(account.password);
                       }}
-                      className="flex w-full items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-left transition-colors hover:border-[var(--ring)] hover:bg-[var(--accent)]"
+                      className="h-auto w-full items-center justify-between rounded-xl bg-[var(--background)] px-4 py-3 text-left"
                     >
                       <div>
                         <p className="text-sm font-semibold text-[var(--foreground)]">
@@ -141,7 +154,7 @@ export function LoginForm({ locale, dictionary }: { locale: Locale; dictionary: 
                         <p className="mt-1 text-xs text-[var(--muted-foreground)]">{account.username}</p>
                       </div>
                       <span className="text-xs text-[var(--muted-foreground)]">{account.password}</span>
-                    </button>
+                    </Button>
                   ))}
                 </CardContent>
               </Card>

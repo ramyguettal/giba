@@ -29,10 +29,9 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1 shadow-sm">
-      <div className="flex items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+    <div className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--background)] p-1">
+      <div className="px-1.5 text-[var(--muted-foreground)]">
         <Languages className="size-3.5" />
-        <span className="hidden sm:inline">Lang</span>
       </div>
       {Object.entries(languageNames).map(([code, label]) => {
         const active = locale === code;
@@ -45,7 +44,7 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
             variant={active ? "default" : "ghost"}
             onClick={() => changeLanguage(code as Locale)}
             disabled={pending}
-            className={cn("h-8 px-2.5 text-xs", !active && "text-[var(--muted-foreground)]")}
+            className={cn("h-7 px-2 text-[11px]", !active && "text-[var(--muted-foreground)]")}
           >
             {label}
           </Button>

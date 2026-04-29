@@ -14,14 +14,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ingestionApi } from "@/lib/api";
 import { Dictionary } from "@/lib/i18n";
 import { IngestionJob, Locale, User } from "@/lib/types";
-import { cn } from "@/lib/utils";
-
-const selectClassName =
-  "flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm shadow-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)]";
 
 function getJobVariant(status: IngestionJob["status"]) {
   if (status === "completed") {
@@ -118,28 +115,28 @@ export function KnowledgeAdmin({
             <form onSubmit={submitManual} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="manual-title">{dictionary.common.title}</Label>
-                <Input id="manual-title" name="title" required className="bg-white" />
+                <Input id="manual-title" name="title" required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="manual-machine">{dictionary.common.machineType}</Label>
-                <select id="manual-machine" name="machineType" className={selectClassName}>
+                <Select id="manual-machine" name="machineType">
                   {user.allowedMachineTypes.map((machine) => (
                     <option key={machine} value={machine}>
                       {machine}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="manual-detail">{dictionary.knowledge.summary}</Label>
-                <Textarea id="manual-detail" name="detail" rows={4} required className="bg-white" />
+                <Textarea id="manual-detail" name="detail" rows={4} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="manual-file">{dictionary.knowledge.documentFile}</Label>
-                <Input id="manual-file" name="file" type="file" className="h-11 bg-white file:mr-3" />
+                <Input id="manual-file" name="file" type="file" className="h-11 file:mr-3" />
               </div>
 
               {manualError ? (
@@ -175,26 +172,24 @@ export function KnowledgeAdmin({
                     setAlertForm((current) => ({ ...current, title: event.target.value }))
                   }
                   required
-                  className="bg-white"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="alert-machine">{dictionary.common.machineType}</Label>
-                <select
+                <Select
                   id="alert-machine"
                   value={alertForm.machineType}
                   onChange={(event) =>
                     setAlertForm((current) => ({ ...current, machineType: event.target.value }))
                   }
-                  className={selectClassName}
                 >
                   {user.allowedMachineTypes.map((machine) => (
                     <option key={machine} value={machine}>
                       {machine}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -207,7 +202,6 @@ export function KnowledgeAdmin({
                   }
                   rows={5}
                   required
-                  className="bg-white"
                 />
               </div>
 
@@ -264,9 +258,6 @@ export function KnowledgeAdmin({
             ))}
           </div>
 
-          {!jobs.length ? (
-            <p className="text-sm text-[var(--muted-foreground)]">{dictionary.dashboard.noReports}</p>
-          ) : null}
         </CardContent>
       </Card>
     </div>

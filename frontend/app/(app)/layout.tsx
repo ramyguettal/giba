@@ -20,7 +20,7 @@ export default async function ProtectedLayout({
 
   return (
     <AuthProviderShell initialUser={user}>
-      <AppShell user={user} locale={locale} dictionary={getDictionary(locale)}>
+      <AppShell user={user} dictionary={getDictionary(locale)}>
         {children}
       </AppShell>
     </AuthProviderShell>

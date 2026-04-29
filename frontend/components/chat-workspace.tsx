@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Bot,
   CheckCircle2,
@@ -8,7 +8,6 @@ import {
   SendHorizonal,
   Sparkles,
   WandSparkles,
-  Wrench,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +15,12 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useMachineScope } from "@/hooks/use-machine-scope";
@@ -53,9 +52,6 @@ const emptyDraft: ReportDraft = {
 };
 
 const reportFields = ["problem", "cause", "solution"] as const;
-
-const selectClassName =
-  "flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm shadow-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ring)]";
 
 function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
@@ -133,10 +129,10 @@ export function ChatWorkspace({
   });
   const [review, setReview] = useState<ReformulatedReport | null>(null);
   const [modifyInstruction, setModifyInstruction] = useState("");
-  const [reportMode, setReportMode] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
-  const [queryMachine, setQueryMachine] = useState(machines[0] ?? "");
+  const queryMachine = machines[0] ?? "";
 
   const showCommands = input.trim() === "/";
 
@@ -144,6 +140,37 @@ export function ChatWorkspace({
     () => Object.values(draft).every((value) => value.trim().length > 0),
     [draft],
   );
+
+  useEffect(() => {
+    if (!reportModalOpen) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setReportModalOpen(false);
+        setReportError(null);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [reportModalOpen]);
+
+  useEffect(() => {
+    if (!reportModalOpen) {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [reportModalOpen]);
 
   function appendStatus(content: string) {
     setMessages((current) => [
@@ -304,7 +331,17 @@ export function ChatWorkspace({
       setDraft({ ...emptyDraft, machine_type: machines[0] ?? "" });
       setReview(null);
       setModifyInstruction("");
-      setReportMode(false);
+      setReportModalOpen(false);
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: createId("message"),
+          role: "assistant",
+          type: "text",
+          content: "Well done. Your report has been submitted successfully.",
+        },
+      ]);
     } catch (error) {
       setReportError(error instanceof Error ? error.message : dictionary.chat.unableToCommit);
     } finally {
@@ -313,40 +350,18 @@ export function ChatWorkspace({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.95fr)]">
-      <Card className="overflow-hidden border-white/70 bg-[var(--card)]/95 shadow-[var(--shadow-panel)]">
-        <CardHeader className="border-b border-[var(--border)] bg-[var(--muted)]/45">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Bot className="size-5 text-[var(--primary)]" />
-                {dictionary.chat.title}
-              </CardTitle>
-              <CardDescription className="mt-1 max-w-2xl leading-6">
-                {dictionary.chat.subtitle}
-              </CardDescription>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-3 py-3">
-              <Label className="text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                {dictionary.chat.queryMachine}
-              </Label>
-              <select
-                value={queryMachine}
-                onChange={(event) => setQueryMachine(event.target.value)}
-                className={cn(selectClassName, "h-9 min-w-44 bg-white")}
-              >
-                {machines.map((machine) => (
-                  <option key={machine} value={machine}>
-                    {machine}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+    <div className="h-[calc(100vh-2rem)]">
+      <Card className="flex h-full flex-col overflow-hidden border-[var(--border)] bg-[var(--card)] shadow-none">
+        <CardHeader className="border-b border-[var(--border)] bg-[var(--card)]">
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bot className="size-5 text-[var(--primary)]" />
+              {dictionary.chat.title}
+            </CardTitle>
+                      </div>
         </CardHeader>
 
-        <CardContent className="flex h-[720px] flex-col p-0">
+        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
           <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
             {messages.map((message) => (
               <div
@@ -355,12 +370,12 @@ export function ChatWorkspace({
               >
                 <div
                   className={cn(
-                    "max-w-[90%] rounded-3xl px-4 py-4 text-sm leading-7 shadow-sm",
+                    "max-w-[90%] rounded-3xl px-4 py-4 text-sm leading-7",
                     message.role === "user"
                       ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                       : message.type === "status"
                         ? "border border-dashed border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)]"
-                        : "border border-[var(--border)] bg-white text-[var(--foreground)]",
+                        : "border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
                   )}
                 >
                   <p>{message.content}</p>
@@ -385,16 +400,16 @@ export function ChatWorkspace({
 
           <Separator />
 
-          <div className="px-5 py-5 sm:px-6">
+          <div className="relative px-5 py-5 sm:px-6">
             {showCommands ? (
-              <div className="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--muted)]/80 p-3">
+              <div className="absolute bottom-[5.5rem] left-5 right-5 z-20 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg sm:left-6 sm:right-6">
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full justify-start rounded-xl px-4 py-6 text-left"
+                  className="w-full justify-start rounded-xl px-4 py-5 text-left"
                   onClick={() => {
                     setInput("");
-                    setReportMode(true);
+                    setReportModalOpen(true);
                   }}
                 >
                   <FileText className="size-4 text-[var(--primary)]" />
@@ -408,7 +423,7 @@ export function ChatWorkspace({
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder={dictionary.chat.placeholder}
-                className="h-12 flex-1 rounded-2xl bg-white"
+                className="h-12 flex-1 rounded-2xl bg-[var(--background)]"
               />
               <Button type="submit" disabled={pending} className="h-12 rounded-2xl px-5">
                 {pending ? dictionary.common.working : dictionary.common.send}
@@ -419,70 +434,68 @@ export function ChatWorkspace({
         </CardContent>
       </Card>
 
-      <section className="space-y-6">
-        <Card className="border-white/70 bg-[var(--card)]/95 shadow-[var(--shadow-panel)]">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Wrench className="size-5 text-[var(--primary)]" />
-              {dictionary.chat.reportWorkflowTitle}
-            </CardTitle>
-            <CardDescription className="leading-6">
-              {dictionary.chat.reportWorkflowDescription}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        <Card className="border-white/70 bg-[var(--card)]/95 shadow-[var(--shadow-panel)]">
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-            <div>
-              <CardTitle className="text-lg">{dictionary.chat.reportComposerTitle}</CardTitle>
-              <CardDescription className="mt-2 leading-6">
-                {reportMode
-                  ? dictionary.chat.reportComposerActive
-                  : dictionary.chat.reportComposerOpen}
-              </CardDescription>
+      {reportModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setReportModalOpen(false);
+              setReportError(null);
+            }
+          }}
+        >
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--border)] bg-[var(--card)] px-5 py-4 sm:px-6">
+              <div>
+                <p className="text-base font-semibold text-[var(--foreground)]">
+                  {dictionary.chat.reportComposerTitle}
+                </p>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  {dictionary.chat.reportComposerActive}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setReportModalOpen(false);
+                  setReportError(null);
+                }}
+              >
+                {dictionary.common.hide}
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setReportMode((current) => !current)}
-            >
-              {reportMode ? dictionary.common.hide : dictionary.common.open}
-            </Button>
-          </CardHeader>
 
-          {reportMode ? (
-            <CardContent className="space-y-5">
-              <div className="space-y-2">
+            <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/45 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                  {dictionary.common.machineType}
+                </p>
                 <Label>{dictionary.common.machineType}</Label>
-                <select
+                <Select
                   value={draft.machine_type}
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, machine_type: event.target.value }))
                   }
-                  className={selectClassName}
+                  className="bg-[var(--background)]"
                 >
                   {machines.map((machine) => (
                     <option key={machine} value={machine}>
                       {machine}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               {reportFields.map((key) => {
                 const label = dictionary.common[key];
 
                 return (
-                  <div key={key} className="rounded-3xl border border-[var(--border)] bg-[var(--muted)]/60 p-4">
+                  <div key={key} className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/45 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <Label>{label}</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => enhanceField(key)}
-                      >
+                      <Button type="button" variant="outline" size="sm" onClick={() => enhanceField(key)}>
                         <Sparkles className="size-4 text-[var(--primary)]" />
                         {dictionary.chat.enhance}
                       </Button>
@@ -493,7 +506,7 @@ export function ChatWorkspace({
                         setDraft((current) => ({ ...current, [key]: event.target.value }))
                       }
                       rows={4}
-                      className="mt-3 rounded-2xl bg-white"
+                      className="mt-3 rounded-2xl bg-[var(--background)]"
                     />
                   </div>
                 );
@@ -505,78 +518,92 @@ export function ChatWorkspace({
                 </div>
               ) : null}
 
+              {review ? (
+                <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+                  <p className="text-sm font-semibold text-[var(--foreground)]">{dictionary.chat.aiReviewCard}</p>
+                  <div className="space-y-3 text-sm leading-6 text-[var(--foreground)]">
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                      <p className="font-semibold text-[var(--foreground)]">{dictionary.common.problem}</p>
+                      <p className="mt-2">{review.clean_problem}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                      <p className="font-semibold text-[var(--foreground)]">{dictionary.common.cause}</p>
+                      <p className="mt-2">{review.clean_cause}</p>
+                    </div>
+                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
+                      <p className="font-semibold text-[var(--foreground)]">{dictionary.common.solution}</p>
+                      <p className="mt-2">{review.clean_solution}</p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <Textarea
+                      value={modifyInstruction}
+                      onChange={(event) => setModifyInstruction(event.target.value)}
+                      rows={3}
+                      placeholder={dictionary.chat.modifyPlaceholder}
+                      className="rounded-2xl bg-[var(--background)]"
+                    />
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={applyModification}
+                        disabled={pending || !modifyInstruction.trim()}
+                        className="flex-1"
+                      >
+                        <Sparkles className="size-4" />
+                        {dictionary.chat.modifyAiVersion}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={approveReport}
+                        disabled={pending}
+                        className="flex-1 bg-[var(--success)] text-white hover:opacity-95"
+                      >
+                        <CheckCircle2 className="size-4" />
+                        {dictionary.chat.approveAndCommit}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-[var(--card)] px-5 py-4 sm:px-6">
               <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setReportModalOpen(false);
+                    setReportError(null);
+                  }}
+                  className="sm:min-w-36"
+                >
+                  {dictionary.common.hide}
+                </Button>
                 <Button type="button" onClick={runReformulation} disabled={pending} className="flex-1">
                   <WandSparkles className="size-4" />
                   {dictionary.chat.reviewAiVersion}
                 </Button>
-                <Button type="button" variant="outline" onClick={approveReport} disabled={pending} className="flex-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={approveReport}
+                  disabled={pending}
+                  className="flex-1"
+                >
                   <CheckCircle2 className="size-4" />
                   {dictionary.chat.submitReport}
                 </Button>
               </div>
-            </CardContent>
-          ) : null}
-        </Card>
-
-        {review ? (
-          <Card className="border-white/70 bg-[var(--card)]/95 shadow-[var(--shadow-panel)]">
-            <CardHeader>
-              <CardTitle className="text-lg">{dictionary.chat.aiReviewCard}</CardTitle>
-              <CardDescription>{dictionary.chat.reviewReady}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-3 text-sm leading-6 text-[var(--foreground)]">
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/70 p-4">
-                  <p className="font-semibold text-[var(--foreground)]">{dictionary.common.problem}</p>
-                  <p className="mt-2">{review.clean_problem}</p>
-                </div>
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/70 p-4">
-                  <p className="font-semibold text-[var(--foreground)]">{dictionary.common.cause}</p>
-                  <p className="mt-2">{review.clean_cause}</p>
-                </div>
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/70 p-4">
-                  <p className="font-semibold text-[var(--foreground)]">{dictionary.common.solution}</p>
-                  <p className="mt-2">{review.clean_solution}</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <Textarea
-                  value={modifyInstruction}
-                  onChange={(event) => setModifyInstruction(event.target.value)}
-                  rows={3}
-                  placeholder={dictionary.chat.modifyPlaceholder}
-                  className="rounded-2xl bg-white"
-                />
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={applyModification}
-                    disabled={pending || !modifyInstruction.trim()}
-                    className="flex-1"
-                  >
-                    <Sparkles className="size-4" />
-                    {dictionary.chat.modifyAiVersion}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={approveReport}
-                    disabled={pending}
-                    className="flex-1 bg-[var(--success)] text-white hover:opacity-95"
-                  >
-                    <CheckCircle2 className="size-4" />
-                    {dictionary.chat.approveAndCommit}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-      </section>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

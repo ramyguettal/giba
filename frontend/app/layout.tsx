@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { isRtlLocale } from "@/lib/i18n";
 import { getLocaleFromCookies } from "@/lib/i18n-server";
+import { getThemeFromCookies } from "@/lib/theme-server";
 
 import "./globals.css";
 
@@ -16,9 +17,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocaleFromCookies();
+  const theme = await getThemeFromCookies();
 
   return (
-    <html lang={locale} dir={isRtlLocale(locale) ? "rtl" : "ltr"} className="h-full antialiased">
+    <html
+      lang={locale}
+      dir={isRtlLocale(locale) ? "rtl" : "ltr"}
+      data-theme={theme}
+      className="h-full antialiased"
+    >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
