@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3f6f8;
+  --foreground: #10212b;
+  --card: #ffffff;
+  --card-foreground: #10212b;
+  --popover: #ffffff;
+  --popover-foreground: #10212b;
+  --primary: #1f4e79;
+  --primary-foreground: #ffffff;
+  --secondary: #eaf0f5;
+  --secondary-foreground: #173047;
+  --muted: #eef3f7;
+  --muted-foreground: #5b6b7c;
+  --accent: #edf3f8;
+  --accent-foreground: #10212b;
+  --destructive: #b42318;
+  --border: #d7e0e8;
+  --input: #ccd8e3;
+  --ring: #2d5f8b;
+  --success: #2e6b4f;
+  --success-soft: #e9f4ed;
+  --success-border: #b8d5c2;
+  --warning: #9a6500;
+  --warning-soft: #fff7e7;
+  --warning-border: #efd69b;
+  --danger-soft: #fff1ee;
+  --danger-border: #efc1bc;
+  --radius: 1rem;
+  --shadow-panel: 0 18px 40px rgba(16, 33, 43, 0.08);
+
+  /* Legacy aliases kept while older component styles are phased out. */
+  --color-page: var(--background);
+  --color-panel: var(--card);
+  --color-panel-subtle: var(--muted);
+  --color-border: var(--border);
+  --color-text: #243746;
+  --color-text-strong: var(--foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-soft: #e8f0f7;
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--destructive);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Inter", "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-page);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-page);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 22%, white);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
