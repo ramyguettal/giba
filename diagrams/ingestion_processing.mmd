@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+    actor Admin as Admin/Integration
+    participant FE as Admin UI or External Sender
+    participant API as Backend API (FastAPI)
+    participant Q as Queue/Worker (Redis)
+    participant PARSER as Document Parser
+    participant AI as LLM Service
+    participant EMB as Embedding Service
+    participant VDB as Vector DB (Chroma)
+    participant RDB as PostgreSQL
+
+    Admin->>FE: Upload manual or send manufacturer alert
+    FE->>API: POST /ingestion endpoint (payload + idempotency-key)
+    API->>API: Validate auth/signature and idempotency
+
+    alt Duplicate request
+        API-->>FE: 200 Already processed
+    else New request
+        API->>Q: Enqueue ingestion job
+        API-->>FE: 202 Accepted + job_id
+
+        Q->>PARSER: Extract text and split into chunks
+        PARSER-->>Q: Chunks + metadata (section/page/machine_type)
+
+        opt Manufacturer alert normalization
+            Q->>AI: Normalize and structure alert text
+            AI-->>Q: Structured alert fields
+        end
+
+        loop For each chunk
+            Q->>EMB: Generate embedding
+            EMB-->>Q: Embedding vector
+            Q->>VDB: Upsert vector + metadata (source, machine_type, section)
+        end
+
+        Q->>RDB: Persist ingestion status, references, and errors if any
+        Q-->>API: Job complete/fail
+        API-->>FE: Status available via polling or webhook callback
+    end

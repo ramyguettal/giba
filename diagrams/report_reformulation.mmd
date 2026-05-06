@@ -1,0 +1,45 @@
+sequenceDiagram
+    autonumber
+    actor Repairer
+    participant FE as Frontend (React)
+    participant API as Backend API (FastAPI)
+    participant AUTH as Auth Middleware
+    participant AI as LLM Service
+    participant EMB as Embedding Service
+    participant VDB as Vector DB (Chroma)
+    participant RDB as PostgreSQL
+
+    Repairer->>FE: Open /report and fill Problem, Cause, Solution, machine_type
+    FE->>API: POST /reports/reformulate
+    API->>AUTH: Validate token and user context
+    AUTH-->>API: user + allowed_machines
+    API->>API: Check machine_type in allowed_machines
+
+    alt Unauthorized machine
+        API-->>FE: 403 Forbidden
+        FE-->>Repairer: Show access denied message
+    else Authorized
+        API->>AI: Reformulate structured fields
+        AI-->>API: clean_problem, clean_cause, clean_solution
+        API-->>FE: Return clean fields for review
+
+        loop Until user approves
+            alt User requests change
+                Repairer->>FE: "Modify this report"
+                FE->>API: POST /reports/modify (clean fields + instruction)
+                API->>AI: Apply instruction to clean fields
+                AI-->>API: Updated clean fields
+                API-->>FE: Updated reformulated report
+            else User approves
+                Repairer->>FE: Approve
+                FE->>API: POST /reports/commit
+                API->>API: Build combined_clean_text
+                API->>EMB: Generate embedding
+                EMB-->>API: Embedding vector
+                API->>VDB: Store vector + metadata
+                API->>RDB: Store report metadata + references
+                API-->>FE: 201 Created + report_id
+                FE-->>Repairer: Confirmation message
+            end
+        end
+    end

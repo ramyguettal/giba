@@ -1,0 +1,32 @@
+sequenceDiagram
+    autonumber
+    actor Repairer
+    participant FE as Frontend (React)
+    participant API as Backend API (FastAPI)
+    participant AUTH as Auth Middleware
+    participant EMB as Embedding Service
+    participant VDB as Vector DB (Chroma)
+    participant AI as LLM Service
+    participant RDB as PostgreSQL
+
+    Repairer->>FE: Ask problem in chat
+    FE->>API: POST /chat (query)
+    API->>AUTH: Validate token and load user scope
+    AUTH-->>API: allowed_machines (+ optional plant/line scope)
+
+    API->>EMB: Embed query
+    EMB-->>API: Query embedding
+    API->>VDB: Search top-k with metadata pre-filter
+    VDB-->>API: Authorized chunks + scores
+
+    API->>API: Compute confidence from scores
+    alt Low confidence
+        API-->>FE: Clarifying question response
+        FE-->>Repairer: Ask follow-up details
+    else Sufficient confidence
+        API->>AI: Generate grounded answer using retrieved context
+        AI-->>API: Diagnosis + causes + solutions + citations
+        API->>RDB: Save audit trace (query, chunk_ids, response_id)
+        API-->>FE: Response with citations and confidence
+        FE-->>Repairer: Render solution + references
+    end
