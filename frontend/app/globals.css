@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
+  --background: #f3f5f2;
+  --foreground: #18211b;
+  --card: #ffffff;
+  --card-foreground: #18211b;
+  --popover: #ffffff;
+  --popover-foreground: #18211b;
+  --primary: #315f49;
+  --primary-foreground: #f7fcf9;
+  --secondary: #e9ede8;
+  --secondary-foreground: #24352a;
+  --muted: #ecefea;
+  --muted-foreground: #617066;
+  --accent: #e5ebe5;
+  --accent-foreground: #18211b;
+  --destructive: #b42318;
+  --border: #d8ddd7;
+  --input: #cbd4cb;
+  --ring: #4b8f69;
+  --success: #315f49;
+  --success-soft: #e8f0eb;
+  --success-border: #bfd0c5;
+  --warning: #9a6500;
+  --warning-soft: #fff7e7;
+  --warning-border: #efd69b;
+  --danger-soft: #fff1ee;
+  --danger-border: #efc1bc;
+  --radius: 0.875rem;
+  --shadow-panel: 0 6px 20px rgba(24, 33, 27, 0.05);
+
+  /* Legacy aliases kept while older component styles are phased out. */
+  --color-page: var(--background);
+  --color-panel: var(--card);
+  --color-panel-subtle: var(--muted);
+  --color-border: var(--border);
+  --color-text: #2c3a31;
+  --color-text-strong: var(--foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-soft: #e4f0e9;
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--destructive);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #121714;
+  --foreground: #e7eee9;
+  --card: #1a211d;
+  --card-foreground: #e7eee9;
+  --popover: #1a211d;
+  --popover-foreground: #e7eee9;
+  --primary: #5ca178;
+  --primary-foreground: #0d140f;
+  --secondary: #212923;
+  --secondary-foreground: #dbe7df;
+  --muted: #1c241f;
+  --muted-foreground: #94a39a;
+  --accent: #253027;
+  --accent-foreground: #e7eee9;
+  --destructive: #ef6b5f;
+  --border: #303933;
+  --input: #39453d;
+  --ring: #67bb8b;
+  --success: #67bb8b;
+  --success-soft: #193224;
+  --success-border: #2f5a42;
+  --warning: #f4c15d;
+  --warning-soft: #33270e;
+  --warning-border: #5d4618;
+  --danger-soft: #341714;
+  --danger-border: #5b2721;
+  --shadow-panel: 0 10px 24px rgba(0, 0, 0, 0.22);
+
+  --color-page: var(--background);
+  --color-panel: var(--card);
+  --color-panel-subtle: var(--muted);
+  --color-border: var(--border);
+  --color-text: #d3e2d9;
+  --color-text-strong: var(--foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-soft: #163123;
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--destructive);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Inter", "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-page);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-page);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 22%, white);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
