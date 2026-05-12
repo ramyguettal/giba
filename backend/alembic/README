@@ -1,0 +1,7 @@
+Alembic migrations for GIBA backend.
+
+Supabase notes:
+- Point `DATABASE_URL` at your Supabase Postgres instance.
+- Supabase requires SSL; set `DATABASE_SSLMODE=require` (or include `?sslmode=require` in `DATABASE_URL`).
+- The migration `0002_vector_documents.py` runs `CREATE EXTENSION IF NOT EXISTS vector`.
+	If your DB role cannot create extensions, enable `vector` in Supabase first (SQL editor) and re-run migrations.

@@ -1,21 +1,6 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16
-    container_name: giba_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-giba_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your-db-password}
-      POSTGRES_DB: ${POSTGRES_DB:-giba_hr}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - giba_network
-
   redis:
     image: redis:7-alpine
     container_name: giba_redis
@@ -32,7 +17,9 @@ services:
     container_name: giba_backend
     restart: always
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-giba_user}:${POSTGRES_PASSWORD:-your-db-password}@postgres:5432/${POSTGRES_DB:-giba_hr}
+      # Supabase-hosted Postgres (relational tables + pgvector live in the same DB)
+      - DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL in .env (Supabase Postgres connection string)}
+      - DATABASE_SSLMODE=${DATABASE_SSLMODE:-require}
       - REDIS_URL=redis://redis:6379/0
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     env_file:
@@ -40,11 +27,9 @@ services:
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:
-      - postgres
       - redis
     volumes:
       - ./backend:/app
-      - chroma_data:/app/data/chroma
     networks:
       - giba_network
 
@@ -63,8 +48,7 @@ services:
       - giba_network
 
 volumes:
-  postgres_data:
-  chroma_data:
+  # No database volume here: Postgres is hosted in Supabase.
 
 networks:
   giba_network:

@@ -1,58 +1,93 @@
+from __future__ import annotations
+
+import time
+
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import time
-import structlog
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from app.core.config import settings
+from app.database.session import SessionLocal
+from app.middleware.correlation_id import CorrelationIdMiddleware
+from app.middleware.error_handler import register_exception_handlers
+from app.routers import auth, chat, health, ingestion, reports
+from app.services.auth_service import AuthService
+from app.core.dependencies import get_redis
 
-# Structured logging configuration
-structlog.configure(
-    processors=[
-        structlog.stdlib.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.JSONRenderer()
-    ]
-)
-logger = structlog.get_logger()
 
-app = FastAPI(title="GIBA HR Assistant API", version="1.0.0")
+def configure_logging() -> structlog.stdlib.BoundLogger:
+    structlog.configure(
+        processors=[
+            structlog.stdlib.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.JSONRenderer(),
+        ]
+    )
+    return structlog.get_logger()
 
-# CORS Middleware setup
+
+logger = configure_logging()
+
+app = FastAPI(title="GIBA Maintenance Assistant API", version="1.0.0")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.APP_ENV == "development" else [settings.NEXT_PUBLIC_API_URL],
+    allow_origins=["*"]
+    if settings.APP_ENV == "development"
+    else (settings.CORS_ALLOW_ORIGINS or [settings.NEXT_PUBLIC_API_URL]),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Logging Middleware
+app.add_middleware(CorrelationIdMiddleware)
+
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
     duration_ms = int((time.time() - start_time) * 1000)
-    
+
     logger.info(
         "request_handled",
         method=request.method,
         path=request.url.path,
         status_code=response.status_code,
         duration_ms=duration_ms,
-        ip=request.client.host if request.client else "unknown"
+        ip=request.client.host if request.client else "unknown",
+        correlation_id=getattr(request.state, "correlation_id", None),
+        user_id=getattr(request.state, "user_id", None),
     )
     return response
 
-# Global Exception Handler (Basic Stub)
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    return {"error": "Internal Server Error", "detail": str(exc)}
 
-# Health Check Route
-@app.get("/health")
-def health_check():
-    return {"status": "ok", "version": "1.0.0"}
+register_exception_handlers(app)
 
-# Placeholders for upcoming routers
-# app.include_router(auth.router, prefix="/auth", tags=["auth"])
-# app.include_router(chat.router, prefix="/chat", tags=["chat"])
-# app.include_router(admin.router, prefix="/admin", tags=["admin"])
+# Routers
+app.include_router(health.router, tags=["health"])
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(reports.router, prefix="/reports", tags=["reports"])
+app.include_router(chat.router, prefix="/chat", tags=["chat"])
+app.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
+
+# Metrics
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    # Optional: create a bootstrap admin user for local/dev.
+    db = SessionLocal()
+    try:
+        try:
+            redis_client = get_redis()
+        except Exception:
+            redis_client = None
+        try:
+            AuthService(db=db, redis_client=redis_client).ensure_bootstrap_admin()
+        except Exception as exc:
+            logger.warning("bootstrap_admin_failed", error=str(exc))
+    finally:
+        db.close()
