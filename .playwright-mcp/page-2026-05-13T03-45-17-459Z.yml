@@ -1,0 +1,89 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - img [ref=e10]
+            - generic [ref=e12]:
+              - paragraph [ref=e13]: GIBA
+              - heading "Maintenance Assistant" [level=1] [ref=e14]
+          - img [ref=e15]
+        - generic [ref=e18]:
+          - paragraph [ref=e19]: admin
+          - paragraph [ref=e20]: Administrator
+          - paragraph [ref=e21]:
+            - generic [ref=e22]: "Scope:"
+            - text: HyPET5e
+        - navigation [ref=e23]:
+          - link "Chat & reports" [ref=e24] [cursor=pointer]:
+            - /url: /chat
+            - img [ref=e25]
+            - generic [ref=e28]: Chat & reports
+          - link "Knowledge base" [ref=e29] [cursor=pointer]:
+            - /url: /knowledge
+            - img [ref=e30]
+            - generic [ref=e32]: Knowledge base
+          - link "Dashboard" [ref=e33] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e34]
+            - generic [ref=e39]: Dashboard
+          - link "Settings" [ref=e40] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e41]
+            - generic [ref=e44]: Settings
+        - button "Sign out" [ref=e46] [cursor=pointer]:
+          - img
+          - text: Sign out
+    - main [ref=e49]:
+      - generic [ref=e51]:
+        - generic [ref=e54]:
+          - img [ref=e55]
+          - text: Maintenance Chat
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - paragraph [ref=e62]: Hello admin. Describe your machine issue or ask a maintenance question.
+            - paragraph [ref=e79]: how to fix hydraulic leak?
+            - generic [ref=e81]:
+              - paragraph [ref=e82]: "To fix a hydraulic leak, you should follow these steps based on the available information: - Locate the source of the leak. - Check the integrity of hydraulic hoses for cracks, tears, or damage. - Replace worn seals and gaskets. - Inspect and tighten any loose connections. - Check the system pressure and adjust if necessary. - Monitor and maintain proper fluid level, using the correct type of fluid. These steps are derived from the context describing an observed hydraulic oil leak (source: [machine_issue:f139ee9d-f90c-4353-9b70-77b2e7f86a94]) and from guidance on gradual pressure loss due to component degradation (source: [machine_issue:0554e389-4cca-4500-97c2-03603cd532be])."
+              - generic [ref=e83]:
+                - generic [ref=e84]: Low confidence 25%
+                - generic [ref=e85]:
+                  - generic [ref=e86]:
+                    - generic [ref=e87]:
+                      - paragraph [ref=e88]: unknown
+                      - generic [ref=e89]: unknown
+                    - paragraph [ref=e91]: Pression hydraulique instable ou faible. Filtre d'huile encrassé, fuite du système, pompe défectueuse, ou clapet défectueux. Contrôler le niveau et la qualité de l'huile, remplacer le filtre d'huile, vérifier les fuites, calibrer la pression de la pompe, remplacer la pompe si défectueuse.
+                    - paragraph [ref=e92]: Reference from knowledge base
+                  - generic [ref=e93]:
+                    - generic [ref=e94]:
+                      - paragraph [ref=e95]: unknown
+                      - generic [ref=e96]: unknown
+                    - paragraph [ref=e98]: La pression ou le débit baisse graduellement. Dégradation des joints, endommagement des tuyaux, ou fuite interne de la pompe. Inspecter tous les joints et les joints d'étanchéité, vérifier les tuyaux pour les fissures ou les déchirures, surveiller le niveau de fluide, remplacer les composants usés, remplir avec le type de fluide correct.
+                    - paragraph [ref=e99]: Reference from knowledge base
+                  - generic [ref=e100]:
+                    - generic [ref=e101]:
+                      - paragraph [ref=e102]: unknown
+                      - generic [ref=e103]: unknown
+                    - paragraph [ref=e105]: Le moule d'injection ne se ferme pas correctement ou avec une pression excessive. Problèmes d'alignement du moule, perte de pression hydraulique, ou dysfonctionnement du contrôleur. Inspecter le moule pour les débris, vérifier les paramètres de pression hydraulique, vérifier le mécanisme de serrage du moule, effectuer la maintenance préventive.
+                    - paragraph [ref=e106]: Reference from knowledge base
+                  - generic [ref=e107]:
+                    - generic [ref=e108]:
+                      - paragraph [ref=e109]: unknown
+                      - generic [ref=e110]: unknown
+                    - paragraph [ref=e112]: Fuite d'huile hydraulique observée. Joint d'étanchéité dégradé, tuyau endommagé, ou connexion desserrée. Localiser la source de la fuite, vérifier l'intégrité des tuyaux hydrauliques, remplacer les joints d'étanchéité usés, vérifier la pression du système.
+                    - paragraph [ref=e113]: Reference from knowledge base
+                  - generic [ref=e114]:
+                    - generic [ref=e115]:
+                      - paragraph [ref=e116]: unknown
+                      - generic [ref=e117]: unknown
+                    - paragraph [ref=e119]: La machine produit un bruit fort ou une vibration. Roulement desserré, désalignement, ou composant usé. Vérifier tous les boulons de montage et les fixations, vérifier l'alignement de la machine avec un niveau de précision, inspecter les roulements pour le jeu excessif, remplacer les pièces usées selon les besoins.
+                    - paragraph [ref=e120]: Reference from knowledge base
+          - generic [ref=e64]:
+            - textbox "Ask about a machine fault, troubleshooting step, or part…" [ref=e65]
+            - button "Send" [ref=e66] [cursor=pointer]:
+              - text: Send
+              - img
+  - button "Open Next.js Dev Tools" [ref=e72] [cursor=pointer]:
+    - img [ref=e73]
+  - alert [ref=e76]

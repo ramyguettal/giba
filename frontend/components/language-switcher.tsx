@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { languageNames } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import { Locale } from "@/lib/types";
 
 export function LanguageSwitcher({ locale }: { locale: Locale }) {
@@ -15,7 +14,6 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
 
   async function changeLanguage(nextLocale: Locale) {
     setPending(true);
-
     try {
       await fetch("/api/preferences/locale", {
         method: "POST",
@@ -29,22 +27,20 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--background)] p-1">
-      <div className="px-1.5 text-[var(--muted-foreground)]">
-        <Languages className="size-3.5" />
+    <div className="inline-flex items-center border border-[var(--border)] bg-[var(--muted)]">
+      <div className="px-2 text-[var(--muted-foreground)]">
+        <Languages className="size-3" />
       </div>
       {Object.entries(languageNames).map(([code, label]) => {
         const active = locale === code;
-
         return (
           <Button
             key={code}
-            type="button"
-            size="sm"
             variant={active ? "default" : "ghost"}
+            size="sm"
             onClick={() => changeLanguage(code as Locale)}
             disabled={pending}
-            className={cn("h-7 px-2 text-[11px]", !active && "text-[var(--muted-foreground)]")}
+            className="h-7 px-2 text-[11px] rounded-none"
           >
             {label}
           </Button>

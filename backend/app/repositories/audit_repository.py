@@ -14,3 +14,12 @@ class AuditRepository:
         self.db.commit()
         self.db.refresh(trace)
         return trace
+
+    def count_all(self) -> int:
+        return self.db.query(AuditTrace).count()
+
+    def count_low_confidence(self, threshold: float = 0.5) -> int:
+        return self.db.query(AuditTrace).filter(AuditTrace.confidence < threshold).count()
+
+    def get_recent(self, limit: int = 10) -> list[AuditTrace]:
+        return self.db.query(AuditTrace).order_by(AuditTrace.created_at.desc()).limit(limit).all()

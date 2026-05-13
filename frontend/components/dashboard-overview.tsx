@@ -1,37 +1,13 @@
-import { Activity, BookMarked, CircleAlert, FileCheck2, Wrench } from "lucide-react";
+import { Activity, FileCheck2, CircleAlert, BookMarked, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dictionary } from "@/lib/i18n";
 import { DashboardStats, IngestionJob, Locale } from "@/lib/types";
 
-function getConfidenceVariant(level: string) {
-  if (level === "high") {
-    return "success" as const;
-  }
-
-  if (level === "medium") {
-    return "warning" as const;
-  }
-
-  return "destructive" as const;
-}
-
 function getJobVariant(status: IngestionJob["status"]) {
-  if (status === "completed") {
-    return "success" as const;
-  }
-
-  if (status === "failed") {
-    return "destructive" as const;
-  }
-
+  if (status === "completed") return "success" as const;
+  if (status === "failed") return "destructive" as const;
   return "warning" as const;
 }
 
@@ -51,52 +27,31 @@ export function DashboardOverview({
   dictionary: Dictionary;
 }) {
   const cards = [
-    {
-      label: dictionary.dashboard.cards.reports,
-      value: stats.totalReports,
-      icon: FileCheck2,
-    },
-    {
-      label: dictionary.dashboard.cards.queries,
-      value: stats.totalQueries,
-      icon: Activity,
-    },
-    {
-      label: dictionary.dashboard.cards.lowConfidence,
-      value: stats.lowConfidenceQueries,
-      icon: CircleAlert,
-    },
-    {
-      label: dictionary.dashboard.cards.jobs,
-      value: stats.activeJobs,
-      icon: BookMarked,
-    },
+    { label: dictionary.dashboard.cards.reports, value: stats.totalReports, icon: FileCheck2 },
+    { label: dictionary.dashboard.cards.queries, value: stats.totalQueries, icon: Activity },
+    { label: dictionary.dashboard.cards.lowConfidence, value: stats.lowConfidenceQueries, icon: CircleAlert },
+    { label: dictionary.dashboard.cards.jobs, value: stats.activeJobs, icon: BookMarked },
   ];
 
   return (
-    <div className="space-y-6">
-      <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-        <CardHeader>
-          <CardTitle className="text-2xl">{dictionary.dashboard.title}</CardTitle>
-          <CardDescription className="max-w-3xl leading-6">
-            {dictionary.dashboard.description}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+    <div className="space-y-6 max-w-6xl">
+      <div>
+        <h1 className="text-lg font-semibold">{dictionary.dashboard.title}</h1>
+        <p className="text-sm text-[var(--muted-foreground)] mt-0.5">{dictionary.dashboard.description}</p>
+      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
-
           return (
-            <Card key={card.label} className="border-[var(--border)] bg-[var(--card)] shadow-none">
-              <CardContent className="flex items-start justify-between p-5">
+            <Card key={card.label} className="border border-[var(--border)] bg-[var(--card)]">
+              <CardContent className="p-4 flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-[var(--muted-foreground)]">{card.label}</p>
-                  <p className="mt-3 text-3xl font-semibold text-[var(--foreground)]">{card.value}</p>
+                  <p className="text-sm text-[var(--muted-foreground)]">{card.label}</p>
+                  <p className="text-xl font-semibold text-[var(--foreground)] mt-1">{card.value}</p>
                 </div>
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-3">
-                  <Icon className="size-5 text-[var(--primary)]" />
+                <div className="border border-[var(--border)] bg-[var(--muted)] p-2">
+                  <Icon className="size-4 text-[var(--primary)]" />
                 </div>
               </CardContent>
             </Card>
@@ -104,91 +59,77 @@ export function DashboardOverview({
         })}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.95fr)]">
-        <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Wrench className="size-5 text-[var(--primary)]" />
+      <div className="grid gap-6 lg:grid-cols-[1.25fr_0.95fr]">
+        <Card className="border border-[var(--border)] bg-[var(--card)]">
+          <CardHeader className="px-4 py-3 border-b border-[var(--border)]">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold">
+              <Wrench className="size-4 text-[var(--primary)]" />
               {dictionary.dashboard.recentJobs}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="p-0 divide-y divide-[var(--border)]">
             {jobs.map((job) => (
-              <div
-                key={job.id}
-                className="rounded-3xl border border-[var(--border)] bg-[var(--muted)] p-4"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-[var(--foreground)]">{job.title}</p>
-                      <Badge variant={getJobVariant(job.status)} className="capitalize">
-                        {job.status}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">{job.detail}</p>
+              <div key={job.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-medium text-[var(--foreground)] truncate">{job.title}</p>
+                    <Badge variant={getJobVariant(job.status)} className="text-[10px] capitalize">{job.status}</Badge>
                   </div>
-                  <div className="text-right text-xs text-[var(--muted-foreground)]">
-                    <p>{job.machineType}</p>
-                    <p className="mt-1 capitalize">{job.type}</p>
-                  </div>
+                  <p className="text-[11px] text-[var(--muted-foreground)] truncate mt-0.5">{job.detail}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[11px] text-[var(--muted-foreground)]">{job.machineType}</p>
+                  <p className="text-[11px] text-[var(--muted-foreground)] capitalize">{job.type}</p>
                 </div>
               </div>
             ))}
+            {jobs.length === 0 && (
+              <p className="px-4 py-6 text-xs text-[var(--muted-foreground)] text-center">No jobs yet.</p>
+            )}
           </CardContent>
         </Card>
 
         <div className="space-y-6">
-          <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-            <CardHeader>
-              <CardTitle className="text-lg">{dictionary.dashboard.recentQueries}</CardTitle>
+          <Card className="border border-[var(--border)] bg-[var(--card)]">
+            <CardHeader className="px-4 py-3 border-b border-[var(--border)]">
+              <CardTitle className="text-xs font-semibold">{dictionary.dashboard.recentQueries}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {recentQueries.length ? (
-                recentQueries.map((query) => (
-                  <div
-                    key={query.id}
-                    className="rounded-3xl border border-[var(--border)] bg-[var(--muted)] p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-semibold text-[var(--foreground)]">{query.question}</p>
-                      <Badge variant={getConfidenceVariant(query.confidenceLevel)} className="capitalize">
-                        {query.confidenceLevel}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-                      {new Date(query.createdAt).toLocaleString(locale)}
-                    </p>
+            <CardContent className="p-0 divide-y divide-[var(--border)]">
+              {recentQueries.map((q) => (
+                <div key={q.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-xs text-[var(--foreground)] truncate">{q.question}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="secondary" className="text-[10px] capitalize">{q.confidenceLevel}</Badge>
+                    <span className="text-[11px] text-[var(--muted-foreground)]">
+                      {new Date(q.createdAt).toLocaleString(locale)}
+                    </span>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-[var(--muted-foreground)]">{dictionary.dashboard.noQueries}</p>
+                </div>
+              ))}
+              {recentQueries.length === 0 && (
+                <p className="px-4 py-6 text-xs text-[var(--muted-foreground)] text-center">{dictionary.dashboard.noQueries}</p>
               )}
             </CardContent>
           </Card>
 
-          <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-            <CardHeader>
-              <CardTitle className="text-lg">{dictionary.dashboard.recentReports}</CardTitle>
+          <Card className="border border-[var(--border)] bg-[var(--card)]">
+            <CardHeader className="px-4 py-3 border-b border-[var(--border)]">
+              <CardTitle className="text-xs font-semibold">{dictionary.dashboard.recentReports}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {recentReports.length ? (
-                recentReports.map((report) => (
-                  <div
-                    key={report.id}
-                    className="rounded-3xl border border-[var(--border)] bg-[var(--muted)] p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-[var(--foreground)]">{report.id}</p>
-                      <Badge variant="outline">{report.machine_type}</Badge>
-                    </div>
-                    <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-                      {new Date(report.createdAt).toLocaleString(locale)}
-                    </p>
+            <CardContent className="p-0 divide-y divide-[var(--border)]">
+              {recentReports.map((r) => (
+                <div key={r.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-xs font-mono text-[var(--foreground)]">{r.id.slice(0, 8)}</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{r.machine_type}</Badge>
+                    <span className="text-[11px] text-[var(--muted-foreground)]">
+                      {new Date(r.createdAt).toLocaleString(locale)}
+                    </span>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-[var(--muted-foreground)]">{dictionary.dashboard.noReports}</p>
+                </div>
+              ))}
+              {recentReports.length === 0 && (
+                <p className="px-4 py-6 text-xs text-[var(--muted-foreground)] text-center">{dictionary.dashboard.noReports}</p>
               )}
             </CardContent>
           </Card>

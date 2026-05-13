@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.database.session import SessionLocal
 from app.middleware.correlation_id import CorrelationIdMiddleware
 from app.middleware.error_handler import register_exception_handlers
-from app.routers import auth, chat, health, ingestion, reports
+from app.routers import auth, chat, dashboard, health, ingestion, reports
 from app.services.auth_service import AuthService
 
 
@@ -70,6 +70,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(reports.router, prefix="/reports", tags=["reports"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(ingestion.router, prefix="/ingestion", tags=["ingestion"])
+app.include_router(dashboard.router, tags=["dashboard"])
 
 # Metrics
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")

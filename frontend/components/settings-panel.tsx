@@ -20,44 +20,42 @@ export function SettingsPanel({
   dictionary: Dictionary;
 }) {
   return (
-    <div className="space-y-6">
-      <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-        <CardHeader>
-          <CardTitle className="text-2xl">{dictionary.settings.title}</CardTitle>
-          <CardDescription>{dictionary.settings.description}</CardDescription>
-        </CardHeader>
-      </Card>
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <h1 className="text-lg font-semibold">{dictionary.settings.title}</h1>
+        <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{dictionary.settings.description}</p>
+      </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Palette className="size-5 text-[var(--primary)]" />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="border border-[var(--border)] bg-[var(--card)]">
+          <CardHeader className="px-4 py-3 border-b border-[var(--border)]">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold">
+              <Palette className="size-4 text-[var(--primary)]" />
               {dictionary.settings.appearance}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <ThemeSwitcher theme={theme} dictionary={dictionary} />
           </CardContent>
         </Card>
 
-        <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Globe2 className="size-5 text-[var(--primary)]" />
+        <Card className="border border-[var(--border)] bg-[var(--card)]">
+          <CardHeader className="px-4 py-3 border-b border-[var(--border)]">
+            <CardTitle className="flex items-center gap-2 text-xs font-semibold">
+              <Globe2 className="size-4 text-[var(--primary)]" />
               {dictionary.settings.language}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <LanguageSwitcher locale={locale} />
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-[var(--border)] bg-[var(--card)] shadow-none">
-        <CardHeader>
-          <CardTitle className="text-lg">{dictionary.settings.account}</CardTitle>
-          <CardDescription>
+      <Card className="border border-[var(--border)] bg-[var(--card)]">
+        <CardHeader className="px-4 py-3 border-b border-[var(--border)]">
+          <CardTitle className="text-xs font-semibold">{dictionary.settings.account}</CardTitle>
+          <CardDescription className="text-[11px]">
             {user.name} - {dictionary.common.roleLabels[user.role]}
           </CardDescription>
         </CardHeader>

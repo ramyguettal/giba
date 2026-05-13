@@ -17,3 +17,14 @@ class ReportRepository:
 
     def get(self, report_id: str) -> Report | None:
         return self.db.query(Report).filter(Report.id == report_id).first()
+
+    def count_all(self) -> int:
+        return self.db.query(Report).count()
+
+    def count_by_machine(self) -> dict[str, int]:
+        from sqlalchemy import func
+        rows = self.db.query(Report.machine_type, func.count()).group_by(Report.machine_type).all()
+        return {r[0]: r[1] for r in rows}
+
+    def get_recent(self, limit: int = 10) -> list[Report]:
+        return self.db.query(Report).order_by(Report.created_at.desc()).limit(limit).all()

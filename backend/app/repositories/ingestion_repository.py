@@ -37,3 +37,9 @@ class IngestionRepository:
         job.error = error
         self.db.add(job)
         self.db.commit()
+
+    def count_active(self) -> int:
+        return self.db.query(IngestionJob).filter(~IngestionJob.status.in_(["completed", "failed"])).count()
+
+    def get_recent(self, limit: int = 10) -> list[IngestionJob]:
+        return self.db.query(IngestionJob).order_by(IngestionJob.created_at.desc()).limit(limit).all()

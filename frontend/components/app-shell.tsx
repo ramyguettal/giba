@@ -8,11 +8,16 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  ShieldCheck,
+  ChevronRight,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { Dictionary } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -51,87 +56,88 @@ export function AppShell({
     router.refresh();
   }
 
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className="min-h-screen lg:pl-76">
-        <aside className="w-full border-b border-[var(--border)] bg-[var(--card)] lg:fixed lg:inset-y-0 lg:left-0 lg:w-76 lg:border-b-0 lg:border-r">
-          <div className="h-full overflow-y-auto px-4 py-4 lg:px-5 lg:py-6">
-            <div className="flex min-h-full flex-col">
-              <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] pb-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--muted)] text-[var(--primary)]">
-                    <Activity className="size-5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                      GIBA
-                    </p>
-                    <h1 className="mt-1 text-base font-semibold text-[var(--foreground)]">
-                      {dictionary.shell.product}
-                    </h1>
-                  </div>
-                </div>
-                <ShieldCheck className="mt-1 size-5 text-[var(--primary)]" />
-              </div>
-
-              <div className="mt-5 rounded-xl border border-[var(--border)] bg-[var(--muted)] p-3">
-                <p className="text-sm font-semibold text-[var(--foreground)]">{user.name}</p>
-                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  {dictionary.common.roleLabels[user.role]}
-                </p>
-                <p className="mt-3 text-xs leading-5 text-[var(--muted-foreground)]">
-                  <span className="font-semibold text-[var(--foreground)]">{dictionary.shell.scope}:</span>{" "}
-                  {user.allowedMachineTypes.join(", ")}
-                </p>
-              </div>
-
-              <nav className="mt-5 space-y-1.5">
-                {navItems
-                  .filter((item) => !item.adminOnly || user.role === "admin")
-                  .map((item) => {
-                    const active = pathname === item.href;
-                    const Icon = item.icon;
-
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
-                          active
-                            ? "border-[var(--primary)] bg-[var(--secondary)] text-[var(--foreground)]"
-                            : "border-transparent text-[var(--muted-foreground)] hover:border-[var(--border)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]",
-                        )}
-                      >
-                        <Icon className={cn("size-4", active && "text-[var(--primary)]")} />
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-              </nav>
-
-              <div className="mt-auto space-y-2 pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="size-4" />
-                  {dictionary.common.signOut}
-                </Button>
-              </div>
-            </div>
+    <div className="min-h-screen flex">
+      <aside className="w-56 border-r border-[var(--border)] bg-[var(--card)] flex flex-col shrink-0">
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-[var(--border)]">
+          <div className="flex items-center justify-center size-8 bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-semibold">
+            <Activity className="size-4" />
           </div>
-        </aside>
-
-        <div className="min-h-screen px-4 py-4 lg:px-6 lg:py-6">
-          <div className="flex min-h-[calc(100vh-3rem)] flex-col gap-5">
-            <main className="flex-1">{children}</main>
+          <div className="text-xs font-semibold tracking-widest uppercase text-[var(--muted-foreground)]">
+            GIBA
           </div>
         </div>
-      </div>
+
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
+          <Avatar className="size-8">
+            <AvatarFallback className="bg-[var(--secondary)] text-[var(--secondary-foreground)] text-[11px] font-medium">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-[var(--foreground)] truncate">{user.name}</p>
+            <p className="text-[11px] text-[var(--muted-foreground)]">
+              {dictionary.common.roleLabels[user.role]}
+            </p>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-2 py-3 space-y-0.5">
+          {navItems
+            .filter((item) => !item.adminOnly || user.role === "admin")
+            .map((item) => {
+              const active = pathname === item.href;
+              const Icon = item.icon;
+
+              return (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 text-xs font-medium transition-colors border-l-2",
+                        active
+                          ? "border-l-[var(--primary)] text-[var(--foreground)] bg-[var(--secondary)]"
+                          : "border-l-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--accent)]",
+                      )}
+                    >
+                      <Icon className={cn("size-4 shrink-0", active && "text-[var(--primary)]")} />
+                      <span>{item.label}</span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+        </nav>
+
+        <div className="px-2 py-3 border-t border-[var(--border)]">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-3 py-2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
+          >
+            <LogOut className="size-4 shrink-0" />
+            <span>{dictionary.common.signOut}</span>
+            <ChevronRight className="size-3 ml-auto" />
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex-1 min-h-screen">
+        <div className="h-full p-4 lg:p-6">
+          <div className="animate-in">{children}</div>
+        </div>
+      </main>
     </div>
   );
 }

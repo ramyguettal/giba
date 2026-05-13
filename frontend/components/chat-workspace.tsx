@@ -3,23 +3,21 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Bot,
-  CheckCircle2,
   FileText,
+  Loader2,
   SendHorizonal,
   Sparkles,
   WandSparkles,
+  CheckCircle2,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,7 +55,46 @@ function createId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function renderConfidenceBadge(answer: ChatAnswer, dictionary: Dictionary) {
+function ChatMessage({ message, dictionary }: { message: Message; dictionary: Dictionary }) {
+  if (message.type === "status") {
+    return (
+      <div className="flex justify-center">
+        <div className="flex items-center gap-2 border border-dashed border-[var(--border)] bg-[var(--muted)] px-4 py-2.5 text-sm text-[var(--muted-foreground)] rounded-lg">
+          <Loader2 className="size-4 animate-spin text-[var(--primary)]" />
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
+  const isUser = message.role === "user";
+  const answer = message.answer;
+
+  return (
+    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "max-w-[80%] space-y-2 animate-slide-up",
+          isUser
+            ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+            : "border border-[var(--border)] bg-[var(--card)]",
+        )}
+      >
+        <div className={cn("px-4 py-3", isUser ? "text-sm" : "text-sm leading-relaxed")}>
+          <p>{message.content}</p>
+        </div>
+
+        {answer && (
+          <div className="px-3 pb-3 space-y-3">
+            {renderAnswer(answer, dictionary)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function renderAnswer(answer: ChatAnswer, dictionary: Dictionary) {
   const variant =
     answer.confidenceLevel === "high"
       ? "success"
@@ -66,41 +103,35 @@ function renderConfidenceBadge(answer: ChatAnswer, dictionary: Dictionary) {
         : "destructive";
 
   return (
-    <Badge variant={variant} className="gap-1.5 px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
-      {dictionary.common.confidence[answer.confidenceLevel]} {Math.round(answer.confidenceScore * 100)}%
-    </Badge>
-  );
-}
+    <>
+      <Badge variant={variant} className="text-xs uppercase tracking-wider px-2 py-0.5">
+        {dictionary.common.confidence[answer.confidenceLevel]} {Math.round(answer.confidenceScore * 100)}%
+      </Badge>
 
-function renderCitations(answer: ChatAnswer, dictionary: Dictionary) {
-  if (!answer.citations.length) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-3">
-      {answer.citations.map((citation) => (
-        <div
-          key={citation.id}
-          className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/70 p-4"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-[var(--foreground)]">{citation.title}</p>
-            <Badge variant="secondary" className="capitalize">
-              {citation.source}
-            </Badge>
-            <Badge variant="outline">{citation.machine_type}</Badge>
-          </div>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted-foreground)]">{citation.excerpt}</p>
-          <p className="mt-3 text-xs text-[var(--muted-foreground)]">
-            {citation.section
-              ? `${dictionary.chat.citationSection}: ${citation.section}`
-              : dictionary.chat.citationReference}
-            {citation.page ? ` | ${dictionary.chat.citationPage} ${citation.page}` : ""}
-          </p>
+      {answer.clarificationQuestion && (
+        <div className="border border-[var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2 text-sm text-[var(--warning)] rounded-lg">
+          {answer.clarificationQuestion}
         </div>
-      ))}
-    </div>
+      )}
+
+      {answer.citations.length > 0 && (
+        <div className="space-y-2">
+          {answer.citations.map((citation) => (
+            <div key={citation.id} className="border border-[var(--border)] bg-[var(--muted)] p-3 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-medium text-[var(--foreground)] truncate">
+                  {citation.title}
+                </span>
+                <Badge variant="secondary" className="text-xs capitalize">{citation.source}</Badge>
+              </div>
+              <p className="text-xs leading-relaxed text-[var(--muted-foreground)] line-clamp-2">
+                {citation.excerpt}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -129,68 +160,32 @@ export function ChatWorkspace({
   });
   const [review, setReview] = useState<ReformulatedReport | null>(null);
   const [modifyInstruction, setModifyInstruction] = useState("");
-  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const queryMachine = machines[0] ?? "";
 
-  const showCommands = input.trim() === "/";
-
   const reportReady = useMemo(
-    () => Object.values(draft).every((value) => value.trim().length > 0),
+    () => Object.values(draft).every((v) => v.trim().length > 0),
     [draft],
   );
 
-  useEffect(() => {
-    if (!reportModalOpen) {
-      return;
-    }
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setReportModalOpen(false);
-        setReportError(null);
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [reportModalOpen]);
-
-  useEffect(() => {
-    if (!reportModalOpen) {
-      return;
-    }
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [reportModalOpen]);
-
   function appendStatus(content: string) {
-    setMessages((current) => [
-      ...current,
+    setMessages((curr) => [
+      ...curr,
       { id: createId("status"), role: "assistant", type: "status", content },
     ]);
   }
 
   async function submitQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!input.trim() || pending) {
-      return;
-    }
+    if (!input.trim() || pending) return;
 
     const question = input.trim();
     setInput("");
     setPending(true);
-    setMessages((current) => [
-      ...current,
+    setMessages((curr) => [
+      ...curr,
       { id: createId("message"), role: "user", type: "text", content: question },
     ]);
 
@@ -200,16 +195,9 @@ export function ChatWorkspace({
         machine_type: queryMachine || undefined,
         locale,
       });
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: createId("message"),
-          role: "assistant",
-          type: "text",
-          content: answer.answer,
-          answer,
-        },
+      setMessages((curr) => [
+        ...curr,
+        { id: createId("message"), role: "assistant", type: "text", content: answer.answer, answer },
       ]);
     } catch (error) {
       appendStatus(error instanceof Error ? error.message : dictionary.chat.unableToAnswer);
@@ -225,69 +213,42 @@ export function ChatWorkspace({
         cause: dictionary.common.cause.toLowerCase(),
         solution: dictionary.common.solution.toLowerCase(),
       };
-
-      setReportError(
-        formatTemplate(dictionary.chat.addFieldBeforeEnhancement, { field: labels[field] }),
-      );
+      setReportError(formatTemplate(dictionary.chat.addFieldBeforeEnhancement, { field: labels[field] }));
       return;
     }
-
     setPending(true);
     setReportError(null);
-
     try {
       const result = await reportApi.reformulateReport({ ...draft, locale });
       setReview(result);
-
-      const nextValue =
-        field === "problem"
-          ? result.clean_problem
-          : field === "cause"
-            ? result.clean_cause
-            : result.clean_solution;
-
-      setDraft((current) => ({ ...current, [field]: nextValue }));
-    } catch (error) {
-      setReportError(error instanceof Error ? error.message : dictionary.chat.unableToEnhance);
+      const nextValue = field === "problem" ? result.clean_problem : field === "cause" ? result.clean_cause : result.clean_solution;
+      setDraft((curr) => ({ ...curr, [field]: nextValue }));
+    } catch {
+      setReportError(dictionary.chat.unableToEnhance);
     } finally {
       setPending(false);
     }
   }
 
   async function runReformulation() {
-    if (!reportReady) {
-      setReportError(dictionary.chat.completeFields);
-      return;
-    }
-
-    if (!hasMachine(draft.machine_type)) {
-      setReportError(dictionary.chat.unauthorizedMachine);
-      return;
-    }
-
+    if (!reportReady) { setReportError(dictionary.chat.completeFields); return; }
+    if (!hasMachine(draft.machine_type)) { setReportError(dictionary.chat.unauthorizedMachine); return; }
     setPending(true);
     setReportError(null);
-
     try {
       const result = await reportApi.reformulateReport({ ...draft, locale });
       setReview(result);
       appendStatus(dictionary.chat.reviewReady);
-    } catch (error) {
-      setReportError(
-        error instanceof Error ? error.message : dictionary.chat.unableToReformulate,
-      );
+    } catch {
+      setReportError(dictionary.chat.unableToReformulate);
     } finally {
       setPending(false);
     }
   }
 
   async function applyModification() {
-    if (!review || !modifyInstruction.trim()) {
-      return;
-    }
-
+    if (!review || !modifyInstruction.trim()) return;
     setPending(true);
-
     try {
       const result = await reportApi.modifyReformulation({
         cleanFields: review,
@@ -296,8 +257,8 @@ export function ChatWorkspace({
       });
       setReview(result);
       setModifyInstruction("");
-    } catch (error) {
-      setReportError(error instanceof Error ? error.message : dictionary.chat.unableToModify);
+    } catch {
+      setReportError(dictionary.chat.unableToModify);
     } finally {
       setPending(false);
     }
@@ -306,7 +267,6 @@ export function ChatWorkspace({
   async function approveReport() {
     setPending(true);
     setReportError(null);
-
     try {
       const finalizedReview = review ?? (await reportApi.reformulateReport({ ...draft, locale }));
       const result = await reportApi.commitReport({
@@ -315,295 +275,176 @@ export function ChatWorkspace({
         clean_cause: finalizedReview.clean_cause,
         clean_solution: finalizedReview.clean_solution,
       });
-
-      setMessages((current) => [
-        ...current,
+      setMessages((curr) => [
+        ...curr,
         {
           id: createId("message"),
           role: "assistant",
           type: "text",
-          content: formatTemplate(dictionary.chat.committed, {
-            id: result.id,
-            machine: result.machine_type,
-          }),
+          content: formatTemplate(dictionary.chat.committed, { id: result.id, machine: result.machine_type }),
         },
       ]);
       setDraft({ ...emptyDraft, machine_type: machines[0] ?? "" });
       setReview(null);
       setModifyInstruction("");
-      setReportModalOpen(false);
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: createId("message"),
-          role: "assistant",
-          type: "text",
-          content: "Well done. Your report has been submitted successfully.",
-        },
-      ]);
-    } catch (error) {
-      setReportError(error instanceof Error ? error.message : dictionary.chat.unableToCommit);
+      setReportOpen(false);
+    } catch {
+      setReportError(dictionary.chat.unableToCommit);
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <div className="h-[calc(100vh-2rem)]">
-      <Card className="flex h-full flex-col overflow-hidden border-[var(--border)] bg-[var(--card)] shadow-none">
-        <CardHeader className="border-b border-[var(--border)] bg-[var(--card)]">
-          <div className="flex items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Bot className="size-5 text-[var(--primary)]" />
-              {dictionary.chat.title}
-            </CardTitle>
-                      </div>
-        </CardHeader>
+    <div className="h-[calc(100vh-3rem)] flex flex-col">
+      <div className="flex items-center justify-between gap-4 px-4 h-12 border-b border-[var(--border)]">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+          <Bot className="size-4 text-[var(--primary)]" />
+          {dictionary.chat.title}
+        </div>
+      </div>
 
-        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={message.role === "user" ? "flex justify-end" : "flex justify-start"}
-              >
-                <div
-                  className={cn(
-                    "max-w-[90%] rounded-3xl px-4 py-4 text-sm leading-7",
-                    message.role === "user"
-                      ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                      : message.type === "status"
-                        ? "border border-dashed border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)]"
-                        : "border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
-                  )}
-                >
-                  <p>{message.content}</p>
-
-                  {message.type === "text" && message.answer ? (
-                    <div className="mt-4 space-y-4">
-                      {renderConfidenceBadge(message.answer, dictionary)}
-
-                      {message.answer.clarificationQuestion ? (
-                        <div className="rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-soft)] px-4 py-4 text-sm text-[var(--warning)]">
-                          {message.answer.clarificationQuestion}
-                        </div>
-                      ) : null}
-
-                      {renderCitations(message.answer, dictionary)}
-                    </div>
-                  ) : null}
-                </div>
+      <ScrollArea className="flex-1 px-4 py-4">
+        <div className="space-y-4 max-w-3xl mx-auto">
+          {messages.map((msg) => (
+            <ChatMessage key={msg.id} message={msg} dictionary={dictionary} />
+          ))}
+          {pending && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+            <div className="flex justify-start">
+              <div className="flex items-center gap-2 border border-[var(--border)] bg-[var(--card)] px-4 py-3 rounded-lg animate-pulse">
+                <Loader2 className="size-4 animate-spin text-[var(--primary)]" />
+                <span className="text-sm text-[var(--muted-foreground)]">{dictionary.common.working}</span>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
 
-          <Separator />
-
-          <div className="relative px-5 py-5 sm:px-6">
-            {showCommands ? (
-              <div className="absolute bottom-[5.5rem] left-5 right-5 z-20 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg sm:left-6 sm:right-6">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full justify-start rounded-xl px-4 py-5 text-left"
-                  onClick={() => {
-                    setInput("");
-                    setReportModalOpen(true);
-                  }}
-                >
-                  <FileText className="size-4 text-[var(--primary)]" />
-                  {dictionary.chat.slashSubmitReport}
-                </Button>
-              </div>
-            ) : null}
-
-            <form onSubmit={submitQuestion} className="flex flex-col gap-3 sm:flex-row">
-              <Input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder={dictionary.chat.placeholder}
-                className="h-12 flex-1 rounded-2xl bg-[var(--background)]"
-              />
-              <Button type="submit" disabled={pending} className="h-12 rounded-2xl px-5">
-                {pending ? dictionary.common.working : dictionary.common.send}
-                <SendHorizonal className="size-4" />
-              </Button>
-            </form>
-          </div>
-        </CardContent>
-      </Card>
-
-      {reportModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setReportModalOpen(false);
-              setReportError(null);
-            }
-          }}
-        >
-          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] shadow-2xl">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--border)] bg-[var(--card)] px-5 py-4 sm:px-6">
-              <div>
-                <p className="text-base font-semibold text-[var(--foreground)]">
-                  {dictionary.chat.reportComposerTitle}
-                </p>
-                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  {dictionary.chat.reportComposerActive}
-                </p>
-              </div>
+      <div className="border-t border-[var(--border)] px-4 py-3">
+        <div className="max-w-3xl mx-auto">
+          <form onSubmit={submitQuestion} className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={dictionary.chat.placeholder}
+              className="h-9 text-sm flex-1"
+            />
+            {input.trim() === "/" && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                className="text-sm"
                 onClick={() => {
-                  setReportModalOpen(false);
-                  setReportError(null);
+                  setInput("");
+                  setReportOpen(true);
                 }}
               >
-                {dictionary.common.hide}
+                <FileText className="size-3.5 mr-1" />
+                {dictionary.chat.slashSubmitReport}
               </Button>
-            </div>
+            )}
+            <Button type="submit" disabled={pending} size="sm" className="h-9 text-sm">
+              {pending ? dictionary.common.working : dictionary.common.send}
+              <SendHorizonal className="size-3.5 ml-1" />
+            </Button>
+          </form>
+        </div>
+      </div>
 
-            <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/45 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                  {dictionary.common.machineType}
-                </p>
-                <Label>{dictionary.common.machineType}</Label>
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold">
+                {dictionary.chat.reportComposerTitle}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <Label className="text-sm">{dictionary.common.machineType}</Label>
                 <Select
                   value={draft.machine_type}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, machine_type: event.target.value }))
-                  }
-                  className="bg-[var(--background)]"
+                  onChange={(e) => setDraft((c) => ({ ...c, machine_type: e.target.value }))}
+                  className="h-9 text-sm"
                 >
-                  {machines.map((machine) => (
-                    <option key={machine} value={machine}>
-                      {machine}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              {reportFields.map((key) => {
-                const label = dictionary.common[key];
-
-                return (
-                  <div key={key} className="rounded-2xl border border-[var(--border)] bg-[var(--muted)]/45 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <Label>{label}</Label>
-                      <Button type="button" variant="outline" size="sm" onClick={() => enhanceField(key)}>
-                        <Sparkles className="size-4 text-[var(--primary)]" />
-                        {dictionary.chat.enhance}
-                      </Button>
-                    </div>
-                    <Textarea
-                      value={draft[key]}
-                      onChange={(event) =>
-                        setDraft((current) => ({ ...current, [key]: event.target.value }))
-                      }
-                      rows={4}
-                      className="mt-3 rounded-2xl bg-[var(--background)]"
-                    />
-                  </div>
-                );
-              })}
-
-              {reportError ? (
-                <div className="rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-soft)] px-4 py-3 text-sm text-[var(--destructive)]">
-                  {reportError}
-                </div>
-              ) : null}
-
-              {review ? (
-                <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
-                  <p className="text-sm font-semibold text-[var(--foreground)]">{dictionary.chat.aiReviewCard}</p>
-                  <div className="space-y-3 text-sm leading-6 text-[var(--foreground)]">
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
-                      <p className="font-semibold text-[var(--foreground)]">{dictionary.common.problem}</p>
-                      <p className="mt-2">{review.clean_problem}</p>
-                    </div>
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
-                      <p className="font-semibold text-[var(--foreground)]">{dictionary.common.cause}</p>
-                      <p className="mt-2">{review.clean_cause}</p>
-                    </div>
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--muted)] p-4">
-                      <p className="font-semibold text-[var(--foreground)]">{dictionary.common.solution}</p>
-                      <p className="mt-2">{review.clean_solution}</p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <Textarea
-                      value={modifyInstruction}
-                      onChange={(event) => setModifyInstruction(event.target.value)}
-                      rows={3}
-                      placeholder={dictionary.chat.modifyPlaceholder}
-                      className="rounded-2xl bg-[var(--background)]"
-                    />
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={applyModification}
-                        disabled={pending || !modifyInstruction.trim()}
-                        className="flex-1"
-                      >
-                        <Sparkles className="size-4" />
-                        {dictionary.chat.modifyAiVersion}
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={approveReport}
-                        disabled={pending}
-                        className="flex-1 bg-[var(--success)] text-white hover:opacity-95"
-                      >
-                        <CheckCircle2 className="size-4" />
-                        {dictionary.chat.approveAndCommit}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+                {machines.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </Select>
             </div>
 
-            <div className="sticky bottom-0 z-10 border-t border-[var(--border)] bg-[var(--card)] px-5 py-4 sm:px-6">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setReportModalOpen(false);
-                    setReportError(null);
-                  }}
-                  className="sm:min-w-36"
-                >
-                  {dictionary.common.hide}
-                </Button>
-                <Button type="button" onClick={runReformulation} disabled={pending} className="flex-1">
-                  <WandSparkles className="size-4" />
-                  {dictionary.chat.reviewAiVersion}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={approveReport}
-                  disabled={pending}
-                  className="flex-1"
-                >
-                  <CheckCircle2 className="size-4" />
-                  {dictionary.chat.submitReport}
-                </Button>
+            {reportFields.map((key) => (
+              <div key={key} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">{dictionary.common[key]}</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={() => enhanceField(key)} className="h-7 text-xs">
+                    <Sparkles className="size-3 mr-1" />
+                    {dictionary.chat.enhance}
+                  </Button>
+                </div>
+                <Textarea
+                  value={draft[key]}
+                  onChange={(e) => setDraft((c) => ({ ...c, [key]: e.target.value }))}
+                  rows={3}
+                  className="text-sm"
+                />
               </div>
+            ))}
+
+            {reportError && (
+              <div className="border border-[var(--destructive)]/30 bg-[var(--destructive)]/5 px-3 py-2 text-sm text-[var(--destructive)] rounded-lg">
+                {reportError}
+              </div>
+            )}
+
+            {review && (
+              <div className="border border-[var(--border)] bg-[var(--muted)] p-4 space-y-3 rounded-lg">
+                <p className="text-sm font-semibold">{dictionary.chat.aiReviewCard}</p>
+                {(["clean_problem", "clean_cause", "clean_solution"] as const).map((field) => (
+                  <div key={field} className="space-y-1">
+                    <p className="text-xs font-medium text-[var(--muted-foreground)]">
+                      {dictionary.common[field.replace("clean_", "") as "problem" | "cause" | "solution"]}
+                    </p>
+                    <p className="text-sm">{review[field]}</p>
+                  </div>
+                ))}
+                <Separator />
+                <div className="space-y-2">
+                  <Textarea
+                    value={modifyInstruction}
+                    onChange={(e) => setModifyInstruction(e.target.value)}
+                    rows={2}
+                    placeholder={dictionary.chat.modifyPlaceholder}
+                    className="text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={applyModification} disabled={pending || !modifyInstruction.trim()} className="text-sm h-8">
+                      <Sparkles className="size-3 mr-1" />
+                      {dictionary.chat.modifyAiVersion}
+                    </Button>
+                    <Button size="sm" onClick={approveReport} disabled={pending} className="text-sm h-8 ml-auto">
+                      <CheckCircle2 className="size-3 mr-1" />
+                      {dictionary.chat.approveAndCommit}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={runReformulation} disabled={pending} className="text-sm h-8">
+                <WandSparkles className="size-3 mr-1" />
+                {dictionary.chat.reviewAiVersion}
+              </Button>
+              <Button variant="outline" size="sm" onClick={approveReport} disabled={pending} className="text-sm h-8">
+                <CheckCircle2 className="size-3 mr-1" />
+                {dictionary.chat.submitReport}
+              </Button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

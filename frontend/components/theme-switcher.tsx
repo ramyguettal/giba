@@ -7,7 +7,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dictionary } from "@/lib/i18n";
 import { ThemeMode } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 export function ThemeSwitcher({
   theme,
@@ -21,7 +20,6 @@ export function ThemeSwitcher({
 
   async function changeTheme(nextTheme: ThemeMode) {
     setPending(true);
-
     try {
       await fetch("/api/preferences/theme", {
         method: "POST",
@@ -35,30 +33,25 @@ export function ThemeSwitcher({
   }
 
   return (
-    <div className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--background)] p-1">
-      <div className="px-1.5 text-[var(--muted-foreground)]">
-        {theme === "dark" ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
-      </div>
-
+    <div className="inline-flex items-center border border-[var(--border)] bg-[var(--muted)]">
       <Button
-        type="button"
-        size="sm"
         variant={theme === "light" ? "default" : "ghost"}
+        size="sm"
         onClick={() => changeTheme("light")}
         disabled={pending}
-        className={cn("h-7 px-2 text-[11px]", theme !== "light" && "text-[var(--muted-foreground)]")}
+        className="h-7 px-2 text-[11px] rounded-none"
       >
+        <Sun className="size-3 mr-1" />
         {dictionary.common.light}
       </Button>
-
       <Button
-        type="button"
-        size="sm"
         variant={theme === "dark" ? "default" : "ghost"}
+        size="sm"
         onClick={() => changeTheme("dark")}
         disabled={pending}
-        className={cn("h-7 px-2 text-[11px]", theme !== "dark" && "text-[var(--muted-foreground)]")}
+        className="h-7 px-2 text-[11px] rounded-none"
       >
+        <Moon className="size-3 mr-1" />
         {dictionary.common.dark}
       </Button>
     </div>
