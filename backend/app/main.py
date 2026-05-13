@@ -13,7 +13,6 @@ from app.middleware.correlation_id import CorrelationIdMiddleware
 from app.middleware.error_handler import register_exception_handlers
 from app.routers import auth, chat, health, ingestion, reports
 from app.services.auth_service import AuthService
-from app.core.dependencies import get_redis
 
 
 def configure_logging() -> structlog.stdlib.BoundLogger:
@@ -78,15 +77,10 @@ Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 @app.on_event("startup")
 def _startup() -> None:
-    # Optional: create a bootstrap admin user for local/dev.
     db = SessionLocal()
     try:
         try:
-            redis_client = get_redis()
-        except Exception:
-            redis_client = None
-        try:
-            AuthService(db=db, redis_client=redis_client).ensure_bootstrap_admin()
+            AuthService(db=db).ensure_bootstrap_admin()
         except Exception as exc:
             logger.warning("bootstrap_admin_failed", error=str(exc))
     finally:

@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_PORT: int = 8000
 
-    
     SECRET_KEY: str = ""
 
     # Postgres settings
@@ -24,26 +23,18 @@ class Settings(BaseSettings):
     DATABASE_URL: str = ""
 
     # Optional SSL mode for Postgres connections.
-    # Supabase requires SSL (typically: "require").
-    # If set, this value is injected into DATABASE_URL (unless already present).
     DATABASE_SSLMODE: str = ""
 
-    # Redis settings (kept for backwards compatibility)
-    REDIS_HOST: str = "localhost"
-    REDIS_PORT: int = 6379
-    REDIS_URL: str = ""
-
     # Vector store (Postgres + pgvector)
-    # Stored in the same Postgres database as relational tables.
     VECTOR_TABLE: str = "vector_documents"
     VECTOR_EMBEDDING_DIM: int = 384
 
     # Embeddings
     EMBEDDING_MODEL_NAME: str = "sentence-transformers/all-MiniLM-L6-v2"
 
-    # LLM provider (Groq)
-    GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama3-70b-8192"
+    # LLM provider (OpenCode Go)
+    OPENCODE_API_KEY: str = ""
+    OPENCODE_MODEL: str = "deepseek-v4-flash"
 
     # Auth
     JWT_SECRET: str = ""
@@ -86,11 +77,6 @@ class Settings(BaseSettings):
         )
 
         return self._with_sslmode(url)
-
-    def get_redis_url(self) -> str:
-        if self.REDIS_URL:
-            return self.REDIS_URL
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
 
 
 settings = Settings()

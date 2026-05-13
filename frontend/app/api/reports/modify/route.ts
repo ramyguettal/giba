@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { getSessionUser } from "@/lib/auth/session";
-import { modifyReformulation } from "@/lib/mock-data";
-import { Locale, ReformulatedReport } from "@/lib/types";
+import { getAccessToken, getSessionUser } from "@/lib/auth/session";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -12,12 +12,38 @@ export async function POST(request: Request) {
   }
 
   const payload = (await request.json()) as {
-    cleanFields: ReformulatedReport;
+    cleanFields: { clean_problem: string; clean_cause: string; clean_solution: string };
     instruction: string;
-    locale?: Locale;
+    locale?: string;
   };
 
-  return NextResponse.json(
-    modifyReformulation(payload.cleanFields, payload.instruction, payload.locale),
-  );
+  const token = await getAccessToken();
+
+  const backendPayload = {
+    clean_problem: payload.cleanFields.clean_problem,
+    clean_cause: payload.cleanFields.clean_cause,
+    clean_solution: payload.cleanFields.clean_solution,
+    instruction: payload.instruction,
+    locale: payload.locale || null,
+  };
+
+  const backendRes = await fetch(`${API_URL}/reports/modify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(backendPayload),
+  });
+
+  if (!backendRes.ok) {
+    const body = await backendRes.json().catch(() => ({}));
+    return NextResponse.json(
+      { error: body?.error?.message ?? body?.message ?? "Modification failed." },
+      { status: backendRes.status },
+    );
+  }
+
+  const data = await backendRes.json();
+  return NextResponse.json(data);
 }

@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
-
-import redis
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.exceptions import UnauthorizedError
 from app.core.security import (
     UserContext,
     build_refresh_token_id,
@@ -21,9 +18,8 @@ from app.repositories.user_repository import UserRepository
 
 
 class AuthService:
-    def __init__(self, *, db: Session, redis_client: redis.Redis | None = None):
+    def __init__(self, *, db: Session):
         self.db = db
-        self.redis = redis_client
         self.users = UserRepository(db)
 
     def authenticate(self, username: str, password: str) -> User:
@@ -40,38 +36,21 @@ class AuthService:
             allowed_machines=list(user.allowed_machines or []),
         )
         access = create_access_token(ctx)
-        refresh, token_id = create_refresh_token(ctx)
-
-        # Track refresh token (optional). If Redis isn't available, we skip revocation tracking.
-        if self.redis:
-            self.redis.setex(f"refresh:{token_id}", settings.JWT_REFRESH_EXPIRE_MINUTES * 60, "active")
-
+        refresh, _ = create_refresh_token(ctx)
         return access, refresh
 
     def refresh_access_token(self, refresh_token: str) -> tuple[str, str]:
         claims = decode_token(refresh_token)
-        token_id = build_refresh_token_id(claims)
+        build_refresh_token_id(claims)
         user_id = str(claims.get("sub") or "")
         if not user_id:
             raise UnauthorizedError("Invalid refresh token")
-
-        if self.redis:
-            status = self.redis.get(f"refresh:{token_id}")
-            if status != "active":
-                raise UnauthorizedError("Refresh token revoked")
 
         user = self.users.get_by_id(user_id)
         if not user:
             raise UnauthorizedError("User not found")
 
         return self.issue_tokens(user)
-
-    def revoke_refresh_token(self, refresh_token: str) -> None:
-        if not self.redis:
-            return
-        claims = decode_token(refresh_token)
-        token_id = build_refresh_token_id(claims)
-        self.redis.delete(f"refresh:{token_id}")
 
     def ensure_bootstrap_admin(self) -> None:
         if not settings.BOOTSTRAP_ADMIN_USERNAME or not settings.BOOTSTRAP_ADMIN_PASSWORD:

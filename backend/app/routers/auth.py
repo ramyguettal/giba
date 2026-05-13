@@ -3,12 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_redis
+from app.core.dependencies import get_current_user
+from app.core.security import UserContext
 from app.database.session import get_db
 from app.schemas.auth import LoginRequest, TokenPair, UserMe
 from app.services.auth_service import AuthService
-from app.core.dependencies import get_current_user
-from app.core.security import UserContext
 
 router = APIRouter()
 
@@ -24,7 +23,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/refresh", response_model=TokenPair)
 def refresh(payload: dict, db: Session = Depends(get_db)):
     refresh_token = str(payload.get("refresh_token") or "")
-    service = AuthService(db=db, redis_client=get_redis())
+    service = AuthService(db=db)
     access, refresh_tok = service.refresh_access_token(refresh_token)
     return TokenPair(access_token=access, refresh_token=refresh_tok)
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { canAccessMachine, getSessionUser } from "@/lib/auth/session";
-import { reformulateReport } from "@/lib/mock-data";
-import { Locale, ReportDraft } from "@/lib/types";
+import { canAccessMachine, getAccessToken, getSessionUser } from "@/lib/auth/session";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const payload = (await request.json()) as ReportDraft & { locale?: Locale };
+  const payload = await request.json();
 
   if (!canAccessMachine(user, payload.machine_type)) {
     return NextResponse.json(
@@ -20,5 +20,33 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json(reformulateReport(payload, payload.locale));
+  const token = await getAccessToken();
+
+  const backendPayload = {
+    problem: payload.problem,
+    cause: payload.cause,
+    solution: payload.solution,
+    machine_type: payload.machine_type,
+    locale: payload.locale || null,
+  };
+
+  const backendRes = await fetch(`${API_URL}/reports/reformulate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(backendPayload),
+  });
+
+  if (!backendRes.ok) {
+    const body = await backendRes.json().catch(() => ({}));
+    return NextResponse.json(
+      { error: body?.error?.message ?? body?.message ?? "Reformulation failed." },
+      { status: backendRes.status },
+    );
+  }
+
+  const data = await backendRes.json();
+  return NextResponse.json(data);
 }

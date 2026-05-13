@@ -7,9 +7,8 @@ pydantic-settings==2.10.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.9
-redis==5.0.4
 langchain==0.3.29
-langchain-groq==0.2.5
+langchain-openai==0.3.12
 langchain-community==0.3.31
 
 # Pin core explicitly because we import from langchain_core.

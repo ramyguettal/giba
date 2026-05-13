@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 
 from app.core.config import settings
 from app.core.exceptions import ValidationError
@@ -17,13 +17,17 @@ class AIClientMessage:
 
 class AIClient:
     def __init__(self, *, api_key: str | None = None, model: str | None = None):
-        api_key = api_key if api_key is not None else settings.GROQ_API_KEY
-        model = model if model is not None else settings.GROQ_MODEL
+        api_key = api_key if api_key is not None else settings.OPENCODE_API_KEY
+        model = model if model is not None else settings.OPENCODE_MODEL
         if not api_key:
-            raise ValidationError("GROQ_API_KEY is not configured")
+            raise ValidationError("OPENCODE_API_KEY is not configured")
 
         self.model_name = model
-        self.client = ChatGroq(api_key=api_key, model=model)
+        self.client = ChatOpenAI(
+            api_key=api_key,
+            base_url="https://opencode.ai/zen/go/v1",
+            model=model,
+        )
 
     def generate(
         self,

@@ -1,0 +1,49 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - img [ref=e10]
+        - generic [ref=e13]: Access your workspace
+        - generic [ref=e14]: Sign in with your credentials to continue.
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - img [ref=e18]
+          - button "Light" [ref=e24] [cursor=pointer]
+          - button "Dark" [ref=e25] [cursor=pointer]
+        - generic [ref=e26]:
+          - img [ref=e28]
+          - button "EN" [ref=e32] [cursor=pointer]
+          - button "中文" [ref=e33] [cursor=pointer]
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - text: Username
+          - textbox [ref=e37]: admin
+        - generic [ref=e38]:
+          - text: Password
+          - textbox [ref=e39]: admin123
+        - generic [ref=e70]: Invalid credentials.
+        - button "Sign in" [ref=e40] [cursor=pointer]:
+          - text: Sign in
+          - img
+      - generic [ref=e41]:
+        - generic [ref=e43]: Demo accounts
+        - generic [ref=e44]:
+          - button "Administrator admin admin123" [ref=e45] [cursor=pointer]:
+            - generic [ref=e46]:
+              - paragraph [ref=e47]: Administrator
+              - paragraph [ref=e48]: admin
+            - generic [ref=e49]: admin123
+          - button "Repairer repairer repair123" [ref=e50] [cursor=pointer]:
+            - generic [ref=e51]:
+              - paragraph [ref=e52]: Repairer
+              - paragraph [ref=e53]: repairer
+            - generic [ref=e54]: repair123
+          - button "Supervisor supervisor super123" [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]:
+              - paragraph [ref=e57]: Supervisor
+              - paragraph [ref=e58]: supervisor
+            - generic [ref=e59]: super123
+  - button "Open Next.js Dev Tools" [ref=e65] [cursor=pointer]:
+    - img [ref=e66]
+  - alert [ref=e69]

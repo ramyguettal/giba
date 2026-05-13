@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, File, Form, Header, UploadFile
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_user, get_redis
+from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenError, ValidationError
 from app.core.security import UserContext
 from app.database.session import get_db
@@ -29,7 +29,7 @@ def manufacturer_alert(
     if not idempotency_key:
         raise ValidationError("Idempotency-Key header is required")
 
-    service = IngestionService(db=db, redis_client=get_redis())
+    service = IngestionService(db=db)
     job = service.enqueue_manufacturer_alert(user=user, payload=payload, idempotency_key=idempotency_key)
     return IngestionJobResponse(
         job_id=job.id,
@@ -56,7 +56,7 @@ def manual_ingestion(
     if not idempotency_key:
         raise ValidationError("Idempotency-Key header is required")
 
-    service = IngestionService(db=db, redis_client=get_redis())
+    service = IngestionService(db=db)
     job = service.enqueue_manual(
         user=user,
         title=title,
@@ -83,7 +83,7 @@ def job_status(
     db: Session = Depends(get_db),
 ):
     _require_admin(user)
-    job = IngestionService(db=db, redis_client=get_redis()).get_job(job_id)
+    job = IngestionService(db=db).get_job(job_id)
     return IngestionJobResponse(
         job_id=job.id,
         status=job.status,

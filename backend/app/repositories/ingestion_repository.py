@@ -18,6 +18,17 @@ class IngestionRepository:
     def get(self, job_id: str) -> IngestionJob | None:
         return self.db.query(IngestionJob).filter(IngestionJob.id == job_id).first()
 
+    def find_by_type_title_machine(self, job_type: str, title: str, machine_type: str) -> IngestionJob | None:
+        return (
+            self.db.query(IngestionJob)
+            .filter(
+                IngestionJob.job_type == job_type,
+                IngestionJob.title == title,
+                IngestionJob.machine_type == machine_type,
+            )
+            .first()
+        )
+
     def update_status(self, job_id: str, *, status: str, error: str = "") -> None:
         job = self.get(job_id)
         if not job:

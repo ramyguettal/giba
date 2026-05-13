@@ -12,5 +12,5 @@ def health_check():
 
 @router.get("/ready")
 def readiness_check():
-    # Minimal readiness: if app boots, it's ready. DB/Redis deeper checks can be added later.
+    # Minimal readiness: if app boots, it's ready. DB deeper checks can be added later.
     return {"status": "ready"}
