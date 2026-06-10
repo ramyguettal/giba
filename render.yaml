@@ -1,0 +1,35 @@
+# Render blueprint — deploys the FastAPI backend as a Docker web service.
+# Dashboard → New → Blueprint → point at this repo, then fill in the secret
+# env vars when prompted.
+services:
+  - type: web
+    name: giba-backend
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Supabase Postgres connection string
+      - key: DATABASE_SSLMODE
+        value: require
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: deepseek/deepseek-v4-flash
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: BOOTSTRAP_ADMIN_USERNAME
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: BOOTSTRAP_ADMIN_ALLOWED_MACHINES
+        value: HyPET5e
+      - key: CORS_ALLOW_ORIGINS
+        value: '["https://YOUR-FRONTEND.netlify.app"]'

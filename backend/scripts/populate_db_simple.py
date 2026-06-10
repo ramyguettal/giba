@@ -13,7 +13,10 @@ import sys
 # PostgreSQL connection
 import psycopg2
 from psycopg2.extras import Json
-from sentence_transformers import SentenceTransformer
+
+# Ensure backend root on sys.path so `import app` works when run from anywhere.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from app.services.embedding_service import EmbeddingService
 
 import logging
 
@@ -41,10 +44,10 @@ class SimpleDataPopulator:
             logger.error(f"Failed to connect to database: {e}")
             raise
 
-        # Initialize embedding model
-        logger.info("Loading embedding model...")
-        self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-        logger.info("Embedding model loaded")
+        # Initialize the Voyage AI embedding client
+        logger.info("Initializing Voyage AI embedding client...")
+        self.embeddings = EmbeddingService()
+        logger.info("Embedding client ready")
 
     def ensure_admin_user(self):
         """Ensure admin user exists."""
@@ -104,9 +107,9 @@ class SimpleDataPopulator:
         logger.info(f"Starting population of {len(issues)} issues...")
         
         # Generate embeddings
-        logger.info("Generating embeddings...")
+        logger.info("Generating embeddings via Voyage AI...")
         texts = [f"{i['problem']}. {i['cause']}. {i['solution']}" for i in issues]
-        embeddings = self.model.encode(texts, normalize_embeddings=True)
+        embeddings = self.embeddings.embed_texts(texts, input_type="document")
         
         reports_created = 0
         vectors_created = 0

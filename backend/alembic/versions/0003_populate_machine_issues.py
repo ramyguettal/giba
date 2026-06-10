@@ -47,16 +47,22 @@ def load_machine_issues() -> list[dict]:
 
 
 def generate_embeddings(texts: list[str]) -> list[list[float]]:
-    """Generate embeddings for texts."""
-    try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-        embeddings = model.encode(texts, normalize_embeddings=True)
-        return [[float(x) for x in emb] for emb in embeddings]
-    except ImportError:
-        print("Warning: sentence-transformers not installed, using dummy embeddings")
-        # Return dummy embeddings (384 dims, all zeros)
-        return [[0.0] * 384 for _ in texts]
+    """Generate document embeddings for texts via the Voyage AI API.
+
+    Falls back to zero vectors (of the correct dimension) when no
+    ``VOYAGE_API_KEY`` is configured, so the migration still applies offline.
+    """
+    from app.core.config import settings
+
+    dim = settings.VECTOR_EMBEDDING_DIM
+
+    if not settings.VOYAGE_API_KEY:
+        print(f"Warning: VOYAGE_API_KEY not set, using zero embeddings ({dim} dims)")
+        return [[0.0] * dim for _ in texts]
+
+    from app.services.embedding_service import EmbeddingService
+
+    return EmbeddingService().embed_texts(texts, input_type="document")
 
 
 def upgrade() -> None:

@@ -5,9 +5,10 @@ import type { ChatAnswer, Citation, ConfidenceLevel } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-function mapConfidence(score: number): ConfidenceLevel {
-  if (score >= 0.7) return "high";
-  if (score >= 0.4) return "medium";
+function mapConfidence(score: number, level?: string): ConfidenceLevel {
+  if (level === "high" || level === "medium" || level === "low") return level;
+  if (score >= 0.60) return "high";
+  if (score >= 0.35) return "medium";
   return "low";
 }
 
@@ -33,7 +34,8 @@ export async function POST(request: Request) {
     question: payload.question,
     machine_type: payload.machine_type || null,
     locale: payload.locale || null,
-    top_k: payload.top_k ?? 5,
+    top_k: payload.top_k ?? 8,
+    history: payload.history ?? [],
   };
 
   const backendRes = await fetch(`${API_URL}/chat/query`, {
@@ -60,20 +62,25 @@ export async function POST(request: Request) {
     title: String(c.source ?? "Reference"),
     source: String(c.source ?? ""),
     machine_type: String(c.machine_type ?? ""),
-    excerpt: String(c.snippet ?? "").slice(0, 400),
+    excerpt: String(c.snippet ?? "").slice(0, 500),
     score: Number(c.score ?? 0),
     section: c.section ? String(c.section) : undefined,
     page: c.page ? Number(c.page) : undefined,
   }));
 
+  const confidenceLevel = mapConfidence(
+    Number(data.confidence ?? 0),
+    String(data.confidence_level ?? ""),
+  );
+
   const answer: ChatAnswer = {
     answer: String(data.answer ?? ""),
     confidenceScore: Number(data.confidence ?? 0),
-    confidenceLevel: mapConfidence(Number(data.confidence ?? 0)),
+    confidenceLevel,
     citations,
     mode: String(data.mode ?? "answer") as "answer" | "clarify",
     clarificationQuestion:
-      data.mode === "clarify" ? "Could you provide more detail about the issue?" : undefined,
+      data.mode === "clarify" ? String(data.answer ?? "") : undefined,
   };
 
   return NextResponse.json(answer);

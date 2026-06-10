@@ -33,7 +33,8 @@ def upgrade() -> None:
         sa.Column("source", sa.String(length=32), nullable=False),
         sa.Column("document", sa.Text(), nullable=False),
         sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column("embedding", Vector(384), nullable=False),
+        # Voyage AI voyage-3.5 embeddings are 1024-dimensional.
+        sa.Column("embedding", Vector(1024), nullable=False),
     )
 
     op.create_index("ix_vector_documents_machine_type", "vector_documents", ["machine_type"])

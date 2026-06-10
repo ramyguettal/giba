@@ -16,17 +16,22 @@ class AIClientMessage:
 
 
 class AIClient:
-    def __init__(self, *, api_key: str | None = None, model: str | None = None):
-        api_key = api_key if api_key is not None else settings.OPENCODE_API_KEY
-        model = model if model is not None else settings.OPENCODE_MODEL
+    def __init__(self, *, api_key: str | None = None, model: str | None = None, base_url: str | None = None):
+        api_key = api_key if api_key is not None else settings.llm_api_key
+        model = model if model is not None else settings.llm_model
+        base_url = base_url if base_url is not None else settings.llm_base_url
         if not api_key:
-            raise ValidationError("OPENCODE_API_KEY is not configured")
+            raise ValidationError("No LLM API key configured (set OPENROUTER_API_KEY in .env)")
 
         self.model_name = model
         self.client = ChatOpenAI(
             api_key=api_key,
-            base_url="https://opencode.ai/zen/go/v1",
+            base_url=base_url,
             model=model,
+            default_headers={
+                "HTTP-Referer": "https://giba.ai",
+                "X-Title": "GIBA Maintenance Assistant",
+            },
         )
 
     def generate(
@@ -34,7 +39,7 @@ class AIClient:
         messages: list[AIClientMessage],
         *,
         temperature: float = 0.2,
-        max_tokens: int = 800,
+        max_tokens: int = 1200,
     ) -> str:
         lc_messages = []
         for msg in messages:

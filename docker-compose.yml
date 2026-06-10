@@ -7,6 +7,9 @@ services:
       dockerfile: Dockerfile
     container_name: giba_backend
     restart: always
+    # Dev override: the image's default CMD is production (migrations + no
+    # reload); locally we mount the source and hot-reload instead.
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     environment:
       # Supabase-hosted Postgres (relational tables + pgvector live in the same DB)
       - DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL in .env (Supabase Postgres connection string)}

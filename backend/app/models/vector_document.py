@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from pgvector.sqlalchemy import Vector
 
+from app.core.config import settings
 from app.models.base import Base, TimestampedMixin
 
 
@@ -24,5 +25,7 @@ class VectorDocument(Base, TimestampedMixin):
     # Optional extra metadata (job_id, title, report_id, etc.)
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, default=dict, nullable=False)
 
-    # Default embedding model in this repo is all-MiniLM-L6-v2 (384 dims).
-    embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
+    # Embeddings come from Voyage AI (voyage-3.5 → 1024 dims by default).
+    embedding: Mapped[list[float]] = mapped_column(
+        Vector(settings.VECTOR_EMBEDDING_DIM), nullable=False
+    )

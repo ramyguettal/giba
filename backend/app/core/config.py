@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
+
+# Locate .env: check cwd first, then walk up to project root (max 3 levels).
+def _find_env() -> str:
+    here = Path.cwd()
+    for directory in [here, here.parent, here.parent.parent, here.parent.parent.parent]:
+        candidate = directory / ".env"
+        if candidate.exists():
+            return str(candidate)
+    return ".env"
 
 
 class Settings(BaseSettings):
@@ -27,14 +37,37 @@ class Settings(BaseSettings):
 
     # Vector store (Postgres + pgvector)
     VECTOR_TABLE: str = "vector_documents"
-    VECTOR_EMBEDDING_DIM: int = 384
+    # Voyage AI `voyage-3.5` embeddings are 1024-dimensional.
+    VECTOR_EMBEDDING_DIM: int = 1024
 
-    # Embeddings
-    EMBEDDING_MODEL_NAME: str = "sentence-transformers/all-MiniLM-L6-v2"
+    # Embeddings (Voyage AI)
+    VOYAGE_API_KEY: str = ""
+    VOYAGE_MODEL: str = "voyage-3.5"
+    VOYAGE_API_URL: str = "https://api.voyageai.com/v1/embeddings"
+    # Request timeout (seconds) for the Voyage embeddings endpoint.
+    VOYAGE_TIMEOUT: float = 30.0
+    # Max inputs per Voyage request (the API accepts up to 1000).
+    VOYAGE_BATCH_SIZE: int = 128
 
-    # LLM provider (OpenCode Go)
+    # LLM provider (OpenRouter) — used for grounded answer generation, not embeddings.
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "deepseek/deepseek-v4-flash"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    # Legacy alias kept for backwards-compatibility; OPENROUTER_API_KEY takes precedence.
     OPENCODE_API_KEY: str = ""
-    OPENCODE_MODEL: str = "deepseek-v4-flash"
+    OPENCODE_MODEL: str = "deepseek/deepseek-v4-flash"
+
+    @property
+    def llm_api_key(self) -> str:
+        return self.OPENROUTER_API_KEY or self.OPENCODE_API_KEY
+
+    @property
+    def llm_model(self) -> str:
+        return self.OPENROUTER_MODEL if self.OPENROUTER_API_KEY else self.OPENCODE_MODEL
+
+    @property
+    def llm_base_url(self) -> str:
+        return self.OPENROUTER_BASE_URL if self.OPENROUTER_API_KEY else "https://opencode.ai/zen/go/v1"
 
     # Auth
     JWT_SECRET: str = ""
@@ -52,7 +85,7 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_ALLOWED_MACHINES: str = ""
 
     class Config:
-        env_file = ".env"
+        env_file = _find_env()
 
     def _with_sslmode(self, url: str) -> str:
         sslmode = (self.DATABASE_SSLMODE or "").strip()

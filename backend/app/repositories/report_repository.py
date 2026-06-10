@@ -18,6 +18,10 @@ class ReportRepository:
     def get(self, report_id: str) -> Report | None:
         return self.db.query(Report).filter(Report.id == report_id).first()
 
+    def delete(self, report: Report) -> None:
+        self.db.delete(report)
+        self.db.commit()
+
     def count_all(self) -> int:
         return self.db.query(Report).count()
 
@@ -28,3 +32,12 @@ class ReportRepository:
 
     def get_recent(self, limit: int = 10) -> list[Report]:
         return self.db.query(Report).order_by(Report.created_at.desc()).limit(limit).all()
+
+    def get_all(self, *, limit: int = 100, offset: int = 0) -> list[Report]:
+        return (
+            self.db.query(Report)
+            .order_by(Report.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )

@@ -1,11 +1,14 @@
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
-sqlalchemy==2.0.30
-alembic==1.13.1
-psycopg2-binary==2.9.9
+sqlalchemy==2.0.43
+alembic==1.13.3
+psycopg2-binary==2.9.10
 pydantic-settings==2.10.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+# passlib 1.7.4 predates bcrypt 4.1+ (it reads bcrypt.__about__, removed in 4.1).
+# Pin to the last compatible release to keep password hashing working.
+bcrypt==4.0.1
 python-multipart==0.0.9
 langchain==0.3.29
 langchain-openai==0.3.12
@@ -14,8 +17,8 @@ langchain-community==0.3.31
 # Pin core explicitly because we import from langchain_core.
 langchain-core==0.3.85
 pgvector==0.3.6
-sentence-transformers==3.0.0
 PyMuPDF==1.24.3
+# httpx powers the Voyage AI embeddings client (and is used by langchain).
 httpx==0.27.0
 structlog==24.2.0
 prometheus-fastapi-instrumentator==6.1.0

@@ -1,91 +1,188 @@
 @import "tailwindcss";
 
+/* ---------------------------------------------------------------------------
+   GIBA design tokens — a refined, technical slate/blue system.
+   Light and dark are driven by `html[data-theme="…"]` (see RootLayout).
+--------------------------------------------------------------------------- */
+
 :root,
 html[data-theme="light"] {
   color-scheme: light;
-  --background: #ffffff;
-  --foreground: #111111;
-  --card: #fafafa;
-  --card-foreground: #111111;
+
+  --background: #f7f8fa;
+  --foreground: #0d1117;
+
+  --card: #ffffff;
+  --card-foreground: #0d1117;
   --popover: #ffffff;
-  --popover-foreground: #111111;
-  --primary: #6366f1;
+  --popover-foreground: #0d1117;
+
+  --primary: #16a34a;
   --primary-foreground: #ffffff;
-  --secondary: #f1f1f1;
-  --secondary-foreground: #111111;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f1f1f1;
-  --accent-foreground: #111111;
-  --destructive: #ef4444;
-  --border: #e5e5e5;
-  --input: #d4d4d4;
-  --ring: #6366f1;
+  --brand-red: #d8344a;
+
+  --secondary: #eef1f5;
+  --secondary-foreground: #1f2933;
+
+  --muted: #f1f4f8;
+  --muted-foreground: #5b6675;
+
+  --accent: #e9eef6;
+  --accent-foreground: #1f2933;
+
+  --destructive: #dc2626;
+
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #dc2626;
+
+  --border: #e3e7ee;
+  --input: #d4dae3;
+  --ring: #16a34a;
+
   --radius: 0.5rem;
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --background: #000000;
-  --foreground: #f5f5f5;
-  --card: #0a0a0a;
-  --card-foreground: #f5f5f5;
-  --popover: #0a0a0a;
-  --popover-foreground: #f5f5f5;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #e5e5e5;
-  --muted: #141414;
-  --muted-foreground: #737373;
-  --accent: #1f1f1f;
-  --accent-foreground: #e5e5e5;
-  --destructive: #ef4444;
-  --border: #262626;
-  --input: #333333;
-  --ring: #6366f1;
+
+  --background: #0a0e14;
+  --foreground: #e6edf3;
+
+  --card: #10151d;
+  --card-foreground: #e6edf3;
+  --popover: #10151d;
+  --popover-foreground: #e6edf3;
+
+  --primary: #34c46c;
+  --primary-foreground: #04150b;
+  --brand-red: #f0566c;
+
+  --secondary: #161d27;
+  --secondary-foreground: #d7e0ea;
+
+  --muted: #141a23;
+  --muted-foreground: #8b98a9;
+
+  --accent: #1b2533;
+  --accent-foreground: #e6edf3;
+
+  --destructive: #f85149;
+
+  --success: #3fb950;
+  --warning: #d29922;
+  --danger: #f85149;
+
+  --border: #202836;
+  --input: #2a3342;
+  --ring: #34c46c;
+
   --radius: 0.5rem;
 }
 
+/* Soft/border tints derived from the semantic colors (theme-aware). */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+  --success-soft: color-mix(in oklab, var(--success) 14%, transparent);
+  --success-border: color-mix(in oklab, var(--success) 36%, transparent);
+  --warning-soft: color-mix(in oklab, var(--warning) 14%, transparent);
+  --warning-border: color-mix(in oklab, var(--warning) 36%, transparent);
+  --danger-soft: color-mix(in oklab, var(--danger) 14%, transparent);
+  --danger-border: color-mix(in oklab, var(--danger) 36%, transparent);
+}
+
+/* Map tokens onto Tailwind's color utilities (bg-muted, ring-ring, …). */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Inter", "SF Pro", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "SF Mono", "Fira Code", "Fira Mono", monospace;
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --font-sans: "Inter", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
 
-html {
-  background: var(--background);
-  font-size: 17px;
-}
+  html {
+    background: var(--background);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-body {
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  transition: background-color 200ms ease, color 200ms ease;
-}
+  body {
+    min-height: 100vh;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    transition: background-color 200ms ease, color 200ms ease;
+  }
 
-::selection {
-  background: color-mix(in oklab, var(--primary) 22%, transparent);
-}
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
 
-button, input, textarea, select {
-  font: inherit;
-}
+  button {
+    cursor: pointer;
+  }
 
-button {
-  cursor: pointer;
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 24%, transparent);
+  }
+
+  /* Refined technical scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+    background-clip: content-box;
+  }
 }
 
 @keyframes fadeIn {
@@ -98,10 +195,53 @@ button {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+  40% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes floatBlob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(26px, -30px) scale(1.07); }
+  66% { transform: translate(-18px, 18px) scale(0.96); }
+}
+
+.animate-scale-in {
+  animation: scaleIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-blob {
+  animation: floatBlob 12s ease-in-out infinite;
+}
+
+.animate-blob-slow {
+  animation: floatBlob 16s ease-in-out 3s infinite;
+}
+
 .animate-in {
   animation: fadeIn 200ms ease both;
 }
 
 .animate-slide-up {
-  animation: slideUp 200ms ease both;
+  animation: slideUp 180ms ease both;
+}
+
+/* Input focus glow */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--ring) 25%, transparent);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: box-shadow 150ms ease, transform 150ms ease;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--foreground) 6%, transparent);
+  transform: translateY(-1px);
 }

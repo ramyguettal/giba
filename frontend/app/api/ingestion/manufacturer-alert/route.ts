@@ -20,42 +20,44 @@ function mapJob(data: Record<string, unknown>): IngestionJob {
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  if (user.role !== "admin") return NextResponse.json({ error: "Admin access required." }, { status: 403 });
 
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  const contentType = request.headers.get("content-type") ?? "";
+  let title = "", machineType = "", detail = "";
+  let file: File | null = null;
+
+  if (contentType.includes("multipart/form-data")) {
+    const form = await request.formData();
+    title = String(form.get("title") ?? "");
+    machineType = String(form.get("machineType") ?? "");
+    detail = String(form.get("detail") ?? "");
+    const f = form.get("file");
+    if (f instanceof File && f.size > 0) file = f;
+  } else {
+    const body = await request.json() as { title: string; machineType: string; detail: string };
+    title = body.title ?? "";
+    machineType = body.machineType ?? "";
+    detail = body.detail ?? "";
   }
 
-  if (user.role !== "admin") {
-    return NextResponse.json({ error: "Admin access required." }, { status: 403 });
-  }
-
-  const payload = (await request.json()) as {
-    title: string;
-    machineType: string;
-    detail: string;
-  };
-
-  if (!canAccessMachine(user, payload.machineType)) {
+  if (!canAccessMachine(user, machineType)) {
     return NextResponse.json({ error: "Machine scope is not allowed." }, { status: 403 });
   }
 
   const token = await getAccessToken();
   const idempotencyKey = crypto.randomUUID();
 
-  const backendPayload = {
-    title: payload.title,
-    machine_type: payload.machineType,
-    detail: payload.detail,
-  };
+  const backendForm = new FormData();
+  backendForm.append("title", title);
+  backendForm.append("machine_type", machineType);
+  backendForm.append("detail", detail);
+  if (file) backendForm.append("file", file);
 
   const backendRes = await fetch(`${API_URL}/ingestion/manufacturer-alert`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      "Idempotency-Key": idempotencyKey,
-    },
-    body: JSON.stringify(backendPayload),
+    headers: { Authorization: `Bearer ${token}`, "Idempotency-Key": idempotencyKey },
+    body: backendForm,
   });
 
   if (!backendRes.ok) {
@@ -66,6 +68,5 @@ export async function POST(request: Request) {
     );
   }
 
-  const data = await backendRes.json();
-  return NextResponse.json(mapJob(data));
+  return NextResponse.json(mapJob(await backendRes.json()));
 }

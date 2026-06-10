@@ -65,9 +65,13 @@ class VectorStoreClient:
             )
 
         with self._db_session() as db:
-            stmt = insert(VectorDocument).values(rows)
+            # Insert against the Core table (not the ORM class): the row key
+            # "metadata" maps cleanly to the column, whereas the ORM class
+            # attribute `metadata` is SQLAlchemy's Declarative MetaData.
+            table = VectorDocument.__table__
+            stmt = insert(table).values(rows)
             stmt = stmt.on_conflict_do_update(
-                index_elements=[VectorDocument.id],
+                index_elements=[table.c.id],
                 set_={
                     "machine_type": stmt.excluded.machine_type,
                     "source": stmt.excluded.source,
@@ -78,6 +82,23 @@ class VectorStoreClient:
                 },
             )
             db.execute(stmt)
+            db.commit()
+
+    def delete_documents(self, *, ids: list[str], include_chunks: bool = True) -> None:
+        """Delete documents by id. With include_chunks, also removes chunked
+        entries stored as "{id}:{chunk_index}"."""
+        if not ids:
+            return
+
+        from sqlalchemy import delete, or_
+
+        table = VectorDocument.__table__
+        conditions = [table.c.id.in_([str(i) for i in ids])]
+        if include_chunks:
+            conditions.extend(table.c.id.like(f"{i}:%") for i in ids)
+
+        with self._db_session() as db:
+            db.execute(delete(table).where(or_(*conditions)))
             db.commit()
 
     def query(

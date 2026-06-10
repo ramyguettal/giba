@@ -13,14 +13,18 @@ from app.models.ingestion_job import IngestionJob
 from app.repositories.ingestion_repository import IngestionRepository
 from app.schemas.ingestion import ManufacturerAlertRequest
 from app.services.embedding_service import EmbeddingService
-from app.utils.document_processing import chunk_text, ensure_dir, extract_text_from_pdf
+from app.utils.document_processing import (
+    chunk_with_metadata,
+    detect_doc_type,
+    ensure_dir,
+    extract_text_from_file,
+)
 
 
-def _check_duplicate(repo: IngestionRepository, job_type: str, title: str, machine_type: str) -> IngestionJob | None:
-    existing = repo.find_by_type_title_machine(job_type, title, machine_type)
-    if existing:
-        return existing
-    return None
+def _check_duplicate(
+    repo: IngestionRepository, job_type: str, title: str, machine_type: str
+) -> IngestionJob | None:
+    return repo.find_by_type_title_machine(job_type, title, machine_type)
 
 
 class IngestionService:
@@ -40,46 +44,67 @@ class IngestionService:
             payload = job.payload or {}
             job_type = payload.get("type") or job.job_type
             machine_type = job.machine_type
-
-            texts: list[str] = []
             source = "manufacturer" if job_type == "manufacturer-alert" else "manual"
 
-            if job_type == "manufacturer-alert":
-                texts = chunk_text(str(payload.get("detail") or job.detail))
-            elif job_type == "manual":
-                file_path = str(payload.get("file_path") or "")
-                if file_path and file_path.lower().endswith(".pdf"):
-                    full_text = extract_text_from_pdf(file_path)
-                elif file_path and os.path.exists(file_path):
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                        full_text = f.read()
-                else:
-                    full_text = str(payload.get("detail") or "")
-                texts = chunk_text(full_text)
+            # ── Extract raw text ──────────────────────────────────────────────
+            file_path = str(payload.get("file_path") or "")
+            page_meta: list[dict] = []
+
+            if file_path and os.path.exists(file_path):
+                full_text, page_meta = extract_text_from_file(file_path)
             else:
-                texts = chunk_text(str(payload.get("detail") or ""))
+                full_text = str(payload.get("detail") or "")
+                page_meta = []
 
-            if not texts:
-                raise RuntimeError("No text extracted for ingestion")
+            if not full_text.strip():
+                raise RuntimeError("No text could be extracted for ingestion")
 
+            # ── Detect document type ──────────────────────────────────────────
+            doc_type = detect_doc_type(
+                title=job.title,
+                text_preview=full_text[:600],
+                job_type=job_type,
+            )
+
+            # ── Type-aware chunking with per-chunk metadata ───────────────────
+            base_meta = {
+                "source": source,
+                "machine_type": machine_type,
+                "job_id": job.id,
+                "title": job.title,
+                "doc_type": doc_type,
+            }
+            chunks_with_meta = chunk_with_metadata(
+                full_text,
+                doc_type=doc_type,
+                page_meta=page_meta,
+                base_metadata=base_meta,
+            )
+
+            if not chunks_with_meta:
+                raise RuntimeError("No usable chunks extracted")
+
+            texts = [c for c, _ in chunks_with_meta]
+            metadatas = [m for _, m in chunks_with_meta]
+            ids = [f"{job.id}:{i}" for i in range(len(texts))]
+
+            # ── Embed and upsert ──────────────────────────────────────────────
             embedder = EmbeddingService()
-            vectors = embedder.embed_texts(texts)
+            vectors = embedder.embed_texts(texts, input_type="document")
 
             vstore = VectorStoreClient(db=self.db)
-            ids = [f"{job.id}:{i}" for i in range(len(texts))]
-            metadatas = [
-                {
-                    "source": source,
-                    "machine_type": machine_type,
-                    "job_id": job.id,
-                    "title": job.title,
-                    "chunk_index": i,
-                }
-                for i in range(len(texts))
-            ]
-            vstore.upsert_documents(ids=ids, documents=texts, embeddings=vectors, metadatas=metadatas)
+            vstore.upsert_documents(
+                ids=ids,
+                documents=texts,
+                embeddings=vectors,
+                metadatas=metadatas,
+            )
 
-            self.repo.update_status(job.id, status="completed")
+            self.repo.update_status(
+                job.id,
+                status="completed",
+                error=f"Indexed {len(texts)} chunks (type: {doc_type})",
+            )
         except Exception as exc:
             self.repo.update_status(job.id, status="failed", error=str(exc))
 
@@ -89,6 +114,7 @@ class IngestionService:
         user: UserContext,
         payload: ManufacturerAlertRequest,
         idempotency_key: str,
+        file: UploadFile | None = None,
     ) -> IngestionJob:
         self._validate_machine_access(user, payload.machine_type)
 
@@ -96,17 +122,27 @@ class IngestionService:
         if existing:
             return existing
 
+        file_path = ""
+        if file and file.filename:
+            uploads_dir = "./data/uploads"
+            ensure_dir(uploads_dir)
+            suffix = Path(file.filename).suffix.lower() or ".txt"
+            file_path = str(Path(uploads_dir) / f"{idempotency_key}{suffix}")
+            with open(file_path, "wb") as f:
+                f.write(file.file.read())
+
         job = IngestionJob(
             job_type="manufacturer-alert",
             status="queued",
             machine_type=payload.machine_type,
             title=payload.title,
-            detail=payload.detail,
+            detail=payload.detail or (f"File: {file.filename}" if file else "Alert submitted"),
             payload={
                 "type": "manufacturer-alert",
                 "title": payload.title,
                 "machine_type": payload.machine_type,
                 "detail": payload.detail,
+                "file_path": file_path,
             },
             error="",
         )
@@ -131,10 +167,10 @@ class IngestionService:
             return existing
 
         file_path = ""
-        if file:
+        if file and file.filename:
             uploads_dir = "./data/uploads"
             ensure_dir(uploads_dir)
-            suffix = Path(file.filename or "manual.pdf").suffix
+            suffix = Path(file.filename).suffix.lower() or ".pdf"
             file_path = str(Path(uploads_dir) / f"{idempotency_key}{suffix}")
             with open(file_path, "wb") as f:
                 f.write(file.file.read())
@@ -144,7 +180,7 @@ class IngestionService:
             status="queued",
             machine_type=machine_type,
             title=title,
-            detail=detail or "Manual queued for indexing.",
+            detail=detail or (f"File: {file.filename}" if file else "Manual queued for indexing."),
             payload={
                 "type": "manual",
                 "title": title,
